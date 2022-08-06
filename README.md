@@ -11,13 +11,23 @@
 
 #### Public Methods
 
- - \__init__(self, matrix)  Takes as input a 9x9 matrix of digits representing the puzzle.  Blanks are represented as zeros.  See the test_sudoku files for examples
+ - `__init__`(self, matrix)  Takes as input a 9x9 matrix of digits representing the puzzle.  Blanks are represented as zeros.  See the test_sudoku files for examples
  - printPuzzle(self)  Prints a formatted version of the puzzle.
  - printCandidates(self) Prints a formatted grid of all the candidate values for each empty cell.  Since candidates are represented as sets, filled cells show the empty set in the candidate list.
  - solvePuzzle(self)  This method attempts to solve the puzzle and prints the results.
 
+ ### Class: S_Cell
+  This is the class that makes up each item in the puzzle matrix.  Each cell holds the cell value (zero for blank), the cell's row num, block num, and cell num, and the list of potential candidates that could be values for the cell.
+
+ #### Public Methods
+
+  - `__init__`(self, value, row_num, block_num)  Constructor
+  - setVal(value) Sets the value of the cell and clears the constructor list.  Not that it does not make any changes to the matrix that owns the cell, like clearing the new cell value from other cells in its block.
+  - setCandidates(candidates)  Sets the candidate list to the provided set.
+
+
 #### Public Attributes
- - debug_level  Default is zero and solving only prints summary information.  Set to 1 and it will print information about each cell filled and each candidate pruned so that you could use the output to manually solve a puzzle.  Set to 2 for some additional detail for the candidate pruning functions.
+ - debug_level  At default of zero, solver displays only summary information after completing.  Setting debug_level to 1 and the sovler will print information about each cell filled and each candidate pruned so that you could use the output to manually solve a puzzle.  Set to 2 for some additional detail for the candidate pruning functions.
 
 ## How to use
 - Import both source files into your python environment
@@ -65,3 +75,9 @@ Final state of puzzle:
 5 9 3  4 8 6  1 2 7
 
 ```
+
+## License
+
+Copyright © 2022 [William A. Murphy](https://github.com/wmurphy41).
+
+This project is [MIT](https://spdx.org/licenses/MIT.html) licensed.

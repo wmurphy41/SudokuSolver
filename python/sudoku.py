@@ -48,11 +48,11 @@ class Sudoku:
         #       and that number is a candidate in only one cell
         #
         #     - If you didn't fill any cells on this loop then
-        #       use heuristics to purge some candidates:
+        #       use heuristics to prune some candidates:
         #       - If a number for a row/block/cell is only in
-        #         one row/block/cell, then purge it from the others
-        #       - If there is a magic pair, then purge other candidates
-        #       - If there is a magic triplet, then purge other candidates
+        #         one row/block/cell, then prune it from the others
+        #       - If there is a magic pair, then prune other candidates
+        #       - If there is a magic triplet, then prune other candidates
         #
         print("Starting puzzle:")
         self.printPuzzle()
@@ -340,7 +340,7 @@ class Sudoku:
         return prune_count
 
     def pruneBlockExcRow(self, block_num, row_num, val):
-        # Purges val from the candidate lists of the two rows in the block
+        # prunes val from the candidate lists of the two rows in the block
         # other than row.
         prune_count = 0
         for cell in self.S_Block(block_num):
@@ -374,7 +374,7 @@ class Sudoku:
         return prune_count
 
     def pruneBlockExcCol(self, block_num, col_num, val):
-        # Purges val from the candidate lists of the two rows in the block
+        # prunes val from the candidate lists of the two rows in the block
         # other than row.
         prune_count = 0
         for cell in self.S_Block(block_num):
