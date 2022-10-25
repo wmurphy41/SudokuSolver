@@ -1,6 +1,29 @@
 # SudokuSolver
  Python program that solves sudoku puzzles.   I developed the program as a way to teach myself python.
 
+ Algorithm used by the solver:
+
+ - Loop until through the heuristics until no progress:
+     - Fill cells where there is only one candidate for a cell
+     - Fill cells where a row/block/col is missing a number
+       and that number is a candidate in only one cell
+
+     - If you didn't fill any cells on this loop then
+       use heuristics to prune some candidates:
+
+       - If a number for a row/block/cell is only in
+         one row/block/cell, then prune it from the others
+       - If there is a magic pair*, then prune other candidates
+       - If there is a magic triplet, then prune other candidates
+       - If there is a magic quad, then prune other candidates
+
+\* A magic pair is two cells that have the same two candidates.  A magic triplet
+   is a set of three cells that share the same three candidates, though not all
+   cells need to have the same three candidates.  (E.g., {1,2}, {1,2,3}, {1,3}).
+   A magic quad is like a magic triplet, except with four candidates.
+
+
+
 ## Code
  Project comprises two files:
  - sudoku.py - All functional code.
@@ -14,7 +37,7 @@
  - `__init__`(self, matrix)  Takes as input a 9x9 matrix of digits representing the puzzle.  Blanks are represented as zeros.  See the test_sudoku files for examples
  - printPuzzle(self)  Prints a formatted version of the puzzle.
  - printCandidates(self) Prints a formatted grid of all the candidate values for each empty cell.  Since candidates are represented as sets, filled cells show the empty set in the candidate list.
- - solvePuzzle(self)  This method attempts to solve the puzzle and prints the results.
+ - solvePuzzle(self)  This method attempts to solve the puzzle and prints the results using the logic described in the description above.
 
  ### Class: S_Cell
   This is the class that makes up each item in the puzzle matrix.  Each cell holds the cell value (zero for blank), the cell's row num, block num, and cell num, and the list of potential candidates that could be values for the cell.
