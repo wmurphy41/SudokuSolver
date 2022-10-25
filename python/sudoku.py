@@ -16,7 +16,8 @@ class Sudoku:
             'fillOnlyOption':0,                 \
             'pruneGottaBeHereCantBeThere':0,    \
             'pruneMagicPairs':0,                \
-            'pruneMagicTriplets':0 }
+            'pruneMagicTriplets':0,             \
+            'pruneMagicQuads':0 }
         self.solve_loops = 0
         self.debug_level = 0
 
@@ -53,6 +54,7 @@ class Sudoku:
         #         one row/block/cell, then prune it from the others
         #       - If there is a magic pair, then prune other candidates
         #       - If there is a magic triplet, then prune other candidates
+        #       - If there is a magic quad, then prune other candidates
         #
         print("Starting puzzle:")
         self.printPuzzle()
@@ -60,28 +62,42 @@ class Sudoku:
         # solve Loop
         count0 = self.countZeros()
         self.solve_loops = 0
+        error_message = ""
+        fail = False
+
         while count0 != 0:
             self.solve_loops += 1
             cells_filled_this_loop = 0
             self.debugPrint(1, 'Solve loop: ' + str(self.solve_loops))
 
+            #try:
             # Fill as many cells as you can
             cells_filled_this_loop += self.fillOnlyCandidate()
             cells_filled_this_loop += self.fillOnlyOption()
 
+            # if unable to fill any cells, try purging candidates
             if cells_filled_this_loop == 0:
-                # if unable to fill any cells, try purging candidates
-                # if no candidates pruned, then break out of the solve loops
-                # and give up
                 prune_count = self.pruneGottaBeHereCantBeThere()
                 prune_count += self.pruneMagicPairs()
                 prune_count += self.pruneMagicTriplets()
-                if prune_count == 0:
-                    break
+                prune_count += self.pruneMagicQuads()
+
+            # if no candidates pruned, then break out of the solve loops
+            # and give up
+            if cells_filled_this_loop == 0 and prune_count == 0:
+                fail = True
+
+            #except Exception as error:
+                #error_message = str(error.args)
+
+            if fail or len(error_message) != 0:
+                break
 
             count0 = self.countZeros()
 
-        if count0 == 0:
+        if error_message != "":
+            print("Error encountered while solving: " + error_message)
+        elif count0 == 0:
             print("Successfully solved puzzle")
         else:
             print("Unable to solve puzzle. " + str(count0) + " blanks remain.")
@@ -403,7 +419,7 @@ class Sudoku:
                         cell.candidates -= mp1.candidates
                         num_pruned = c_len - len(cell.candidates)
                         if c_len != len(cell.candidates):
-                            self.debugPrint(1, "- pruned " + str(num_pruned) + " from mp " + str(mp1.candidates) + " in block " + str(mp1.block_num))
+                            self.debugPrint(1, "- pruned " + str(num_pruned) + " from " + str(cell.row_num) + "," + str(cell.col_num) + " for mp: " + str(mp1.candidates))
                             prune_count += num_pruned
 
         # Prune Magic Pairs from rows
@@ -417,7 +433,7 @@ class Sudoku:
                         cell.candidates -= mp1.candidates
                         num_pruned = c_len - len(cell.candidates)
                         if c_len != len(cell.candidates):
-                            self.debugPrint(1, "- pruned " + str(num_pruned) + " from mp " + str(mp1.candidates) + " in row " + str(mp1.row_num))
+                            self.debugPrint(1, "- pruned " + str(num_pruned) + " from " + str(cell.row_num) + "," + str(cell.col_num) + " for mp: " + str(mp1.candidates))
                             prune_count += num_pruned
 
         # Prune Magic Pairs from columns
@@ -431,7 +447,7 @@ class Sudoku:
                         cell.candidates -= mp1.candidates
                         num_pruned = c_len - len(cell.candidates)
                         if c_len != len(cell.candidates):
-                            self.debugPrint(1, "- pruned " + str(num_pruned) + " from mp " + str(mp1.candidates) + " in col " + str(mp1.col_num))
+                            self.debugPrint(1, "- pruned " + str(num_pruned) + " from " + str(cell.row_num) + "," + str(cell.col_num) + " for mp: " + str(mp1.candidates))
                             prune_count += num_pruned
 
         self.metrics['pruneMagicPairs'] += prune_count
@@ -460,17 +476,17 @@ class Sudoku:
         # that row/col/block
 
         # for all blocks
-        #   call magicTriplets and get list of mts
+        #   call findMagicTriplets and get list of mts
         #   for each mp
         #       prune the two candidates from all other cells in block
 
         # for all blocks
-        #   call magicTriplets and get list of mts
+        #   call findMagicTriplets and get list of mts
         #   for each mp
         #       prune the two candidates from all other cells in block
 
         # for all blocks
-        #   call magicTriplets and get list of mts
+        #   call findMagicTriplets and get list of mts
         #   for each mp
         #       prune the two candidates from all other cells in block
 
@@ -526,7 +542,7 @@ class Sudoku:
 
     def findMagicTriplets(self,cell_list):
         # Given a list of cells from a row/block/col
-        # return a list of any magic pairs that it contains
+        # return a list of any magic triplets that it contains
         magic_triplet_list = []
         for i in range(9):
             if not(1 < len(cell_list[i].candidates) < 4):
@@ -545,6 +561,97 @@ class Sudoku:
         return magic_triplet_list
 
 
+    def pruneMagicQuads(self):
+        # if any group of four cells in row/col/block contains only four
+        # candidates then none of those candidates can appear anywhere else
+        # that row/col/block
+
+        # for all blocks
+        #   call findMagicQuads and get list of mts
+        #   for each mp
+        #       prune the two candidates from all other cells in block
+
+        # for all blocks
+        #   call findMagicQuads and get list of mts
+        #   for each mp
+        #       prune the two candidates from all other cells in block
+
+        # for all blocks
+        #   call findMagicQuads and get list of mts
+        #   for each mp
+        #       prune the two candidates from all other cells in block
+
+        # return count of candidates pruned
+        self.debugPrint(1, "Start pruneMagicQuads...")
+        prune_count = 0
+        # Prune Magic Quads from blocks
+        for i in range(9):
+            cell_list = [cell for cell in self.S_Block(i)]
+            mq_list = self.findMagicQuads(cell_list)
+            for mq_c, mq1, mq2, mq3, mq4 in mq_list:
+                for cell in cell_list:
+                    if cell != mq1 and cell != mq2 and cell != mq3 and cell != mq4:
+                        c_len = len(cell.candidates)
+                        cell.candidates -= mq_c
+                        num_pruned = c_len - len(cell.candidates)
+                        if c_len != len(cell.candidates):
+                            self.debugPrint(1, "- pruned " + str(num_pruned) + " from " + str(cell.row_num) + "," + str(cell.col_num) + " for mq: " + str(mq_c))
+                            prune_count += num_pruned
+
+        # Prune Magic Quads from rows
+        for i in range(9):
+            cell_list = [cell for cell in self.S_Row(i)]
+            mq_list = self.findMagicQuads(cell_list)
+            for mq_c, mq1, mq2, mq3, mq4 in mq_list:
+                for cell in cell_list:
+                    if cell != mq1 and cell != mq2 and cell != mq3 and cell != mq4:
+                        c_len = len(cell.candidates)
+                        cell.candidates -= mq_c
+                        num_pruned = c_len - len(cell.candidates)
+                        if c_len != len(cell.candidates):
+                            self.debugPrint(1, "- pruned " + str(num_pruned) + " from " + str(cell.row_num) + "," + str(cell.col_num) + " for mq: " + str(mq_c))
+                            prune_count += num_pruned
+
+        # Prune Magic Quads from cols
+        for i in range(9):
+            cell_list = [cell for cell in self.S_Col(i)]
+            mq_list = self.findMagicQuads(cell_list)
+            for mq_c, mq1, mq2, mq3, mq4 in mq_list:
+                for cell in cell_list:
+                    if cell != mq1 and cell != mq2 and cell != mq3 and cell != mq4:
+                        c_len = len(cell.candidates)
+                        cell.candidates -= mq_c
+                        num_pruned = c_len - len(cell.candidates)
+                        if c_len != len(cell.candidates):
+                            self.debugPrint(1, "- pruned " + str(num_pruned) + " from " + str(cell.row_num) + "," + str(cell.col_num) + " for mq: " + str(mq_c))
+                            prune_count += num_pruned
+
+        self.metrics['pruneMagicQuads'] += prune_count
+        self.debugPrint(1, 'Total pruned: ' + str(prune_count) + " xxx " + str(self.metrics['pruneMagicQuads']))
+        return prune_count
+
+    def findMagicQuads(self,cell_list):
+        # Given a list of cells from a row/block/col
+        # return a list of any magic quads that it contains
+        magic_quad_list = []
+        for i in range(9):
+            if not(1 < len(cell_list[i].candidates) < 5):
+                continue
+            for j in range(i+1, 9):
+                if not(1 < len(cell_list[j].candidates) < 5):
+                    continue
+                for k in range(j+1, 9):
+                    if not(1 < len(cell_list[k].candidates) < 5):
+                        continue
+                    for m in range(k+1, 9):
+                        if not(1 < len(cell_list[m].candidates) < 5):
+                            continue
+                        union_candidates = cell_list[i].candidates | cell_list[j].candidates | cell_list[k].candidates | cell_list[m].candidates
+                        if len(union_candidates) == 4:
+                            x = [[cell_list[i].row_num, cell_list[i].col_num], [cell_list[j].row_num, cell_list[j].col_num], [cell_list[k].row_num, cell_list[k].col_num], [cell_list[m].row_num, cell_list[m].col_num]]
+                            self.debugPrint(2, str(union_candidates) + ": " + str(x))
+                            magic_quad_list += [[union_candidates, cell_list[i], cell_list[j], cell_list[k], cell_list[m]]]
+        return magic_quad_list
 
 
 # ----------------------------------------------------- #
