@@ -1,106 +1,246 @@
 # SudokuSolver
- Python program that solves sudoku puzzles.   I developed the program as a way to teach myself python.
 
- Algorithm used by the solver:
+A comprehensive Python Sudoku solver implementing multiple advanced solving techniques. This project has been significantly improved from its original version with modern Python practices, better performance, and enhanced functionality.
 
- - Loop until through the heuristics until no progress:
-     - Fill cells where there is only one candidate for a cell
-     - Fill cells where a row/block/col is missing a number
-       and that number is a candidate in only one cell
+## Features
 
-     - If you didn't fill any cells on this loop then
-       use heuristics to prune some candidates:
+### Solving Techniques
+- **Naked Singles**: Fill cells with only one candidate
+- **Hidden Singles**: Fill cells where a value can only go in one position in a constraint group
+- **Intersection Removal**: Advanced constraint propagation techniques
+- **Naked Groups**: Handle pairs, triples, and quads of candidates
+- **Hidden Groups**: Advanced group-based solving techniques
 
-       - If a number for a row/block/cell is only in
-         one row/block/cell, then prune it from the others
-       - If there is a magic pair*, then prune other candidates
-       - If there is a magic triplet, then prune other candidates
-       - If there is a magic quad, then prune other candidates
+### Key Improvements
+- ✅ **Type Safety**: Comprehensive type hints throughout
+- ✅ **Error Handling**: Custom exceptions with descriptive messages
+- ✅ **Performance**: Optimized algorithms and data structures
+- ✅ **Documentation**: Google-style docstrings and clear API
+- ✅ **Testing**: Comprehensive test suite with edge cases
+- ✅ **Modern Python**: Dataclasses, enums, and best practices
 
-\* A magic pair is two cells that have the same two candidates.  A magic triplet
-   is a set of three cells that share the same three candidates, though not all
-   cells need to have the same three candidates.  (E.g., {1,2}, {1,2,3}, {1,3}).
-   A magic quad is like a magic triplet, except with four candidates.
-
-
-
-## Code
- Project comprises two files:
- - sudoku.py - All functional code.
- - test_sudoku.py - Contains test matrices that I took from the NY Times puzzles section.
-
-### Class: Sudoku
- This is the main class, including the internal representation of the matrix and all the methods used to solve it.  The matrix is a 9x9 matrix of S_Cells.
-
-#### Public Methods
-
- - `__init__`(self, matrix)  Takes as input a 9x9 matrix of digits representing the puzzle.  Blanks are represented as zeros.  See the test_sudoku files for examples
- - printPuzzle(self)  Prints a formatted version of the puzzle.
- - printCandidates(self) Prints a formatted grid of all the candidate values for each empty cell.  Since candidates are represented as sets, filled cells show the empty set in the candidate list.
- - solvePuzzle(self)  This method attempts to solve the puzzle and prints the results using the logic described in the description above.
-
- ### Class: S_Cell
-  This is the class that makes up each item in the puzzle matrix.  Each cell holds the cell value (zero for blank), the cell's row num, block num, and cell num, and the list of potential candidates that could be values for the cell.
-
- #### Public Methods
-
-  - `__init__`(self, value, row_num, block_num)  Constructor
-  - setVal(value) Sets the value of the cell and clears the constructor list.  Not that it does not make any changes to the matrix that owns the cell, like clearing the new cell value from other cells in its block.
-  - setCandidates(candidates)  Sets the candidate list to the provided set.
-
-
-#### Public Attributes
- - debug_level  At default of zero, solver displays only summary information after completing.  Setting debug_level to 1 and the sovler will print information about each cell filled and each candidate pruned so that you could use the output to manually solve a puzzle.  Set to 2 for some additional detail for the candidate pruning functions.
-
-## How to use
-- Import both source files into your python environment
-- Load one of the matrices from the test file and use the solvePuzzle method.
+## Project Structure
 
 ```
->>> from sudoku import *
->>> from test_sudoku import *
->>> puzzle = Sudoku(matrix_hard_1)
->>> puzzle.solvePuzzle()
-Starting puzzle:
-
-0 0 0  0 0 0  7 0 5
-0 0 0  9 3 0  0 0 0
-0 1 4  0 0 5  2 0 0
-
-0 0 0  0 0 1  3 0 0
-1 0 0  0 0 7  0 0 0
-6 0 8  0 4 0  0 9 0
-
-0 0 0  2 0 0  0 6 0
-8 0 0  0 0 0  0 5 4
-0 0 3  0 0 0  0 0 0
-
-Successfully solved puzzle
-Completed 8 solve loops
-Metrics:
- fillOnlyCandidate             :  23
- fillOnlyOption                :  36
- pruneGottaBeHereCantBeThere   :  14
- pruneMagicPairs               :  0
- pruneMagicTriplets            :  8
-Final state of puzzle:
-
-9 8 6  1 2 4  7 3 5
-2 5 7  9 3 8  4 1 6
-3 1 4  6 7 5  2 8 9
-
-4 2 9  5 6 1  3 7 8
-1 3 5  8 9 7  6 4 2
-6 7 8  3 4 2  5 9 1
-
-7 4 1  2 5 9  8 6 3
-8 6 2  7 1 3  9 5 4
-5 9 3  4 8 6  1 2 7
-
+SudokuSolver/
+├── src/
+│   └── sudoku.py          # Main solver implementation
+├── tests/
+│   └── test_sudoku.py     # Comprehensive test suite
+├── examples/
+│   ├── demo.py            # Usage demonstrations
+│   └── sample_puzzles.py  # Collection of test puzzles
+├── docs/
+│   └── IMPROVEMENTS.md    # Detailed improvement documentation
+└── README.md              # This file
 ```
+
+## Installation
+
+No external dependencies required - uses only Python standard library.
+
+```bash
+git clone https://github.com/wmurphy41/SudokuSolver.git
+cd SudokuSolver
+```
+
+## Quick Start
+
+### Basic Usage
+
+```python
+from src.sudoku import solve_sudoku
+
+# Define a puzzle (0 = empty cell, 1-9 = filled cells)
+puzzle = [
+    [5, 3, 0, 0, 7, 0, 0, 0, 0],
+    [6, 0, 0, 1, 9, 5, 0, 0, 0],
+    [0, 9, 8, 0, 0, 0, 0, 6, 0],
+    [8, 0, 0, 0, 6, 0, 0, 0, 3],
+    [4, 0, 0, 8, 0, 3, 0, 0, 1],
+    [7, 0, 0, 0, 2, 0, 0, 0, 6],
+    [0, 6, 0, 0, 0, 0, 2, 8, 0],
+    [0, 0, 0, 4, 1, 9, 0, 0, 5],
+    [0, 0, 0, 0, 8, 0, 0, 7, 9]
+]
+
+# Solve the puzzle
+solved = solve_sudoku(puzzle)
+print(f"Puzzle solved: {solved}")
+```
+
+### Advanced Usage
+
+```python
+from src.sudoku import SudokuSolver
+
+# Create solver with debug output
+solver = SudokuSolver(puzzle, debug_level=1)
+solved = solver.solve()
+
+if solved:
+    print(f"Solved in {solver.metrics.solve_loops} iterations!")
+    print(f"Techniques used:")
+    print(f"  Naked singles: {solver.metrics.fill_only_candidate}")
+    print(f"  Hidden singles: {solver.metrics.fill_only_option}")
+    print(f"  Intersection removal: {solver.metrics.prune_gotta_be_here}")
+    print(f"  Naked groups: {solver.metrics.prune_magic_pairs}")
+    
+    # Display the solved puzzle
+    solver.print_grid()
+```
+
+## API Reference
+
+### SudokuSolver Class
+
+The main solver class implementing comprehensive Sudoku solving techniques.
+
+#### Constructor
+```python
+SudokuSolver(puzzle: List[List[int]], debug_level: int = 0)
+```
+
+**Parameters:**
+- `puzzle`: 9x9 grid of integers (0 for empty cells, 1-9 for filled)
+- `debug_level`: Debug output level (0=none, 1=basic, 2=detailed)
+
+**Raises:**
+- `SudokuError`: If puzzle format is invalid
+
+#### Methods
+
+- `solve() -> bool`: Solve the puzzle and return success status
+- `print_grid()`: Display the current state of the grid
+- `print_candidates()`: Show candidates for all cells (debugging aid)
+- `count_empty_cells() -> int`: Count remaining empty cells
+
+#### Properties
+
+- `metrics`: `SolvingMetrics` object tracking solving performance
+- `debug_level`: Current debug output level
+
+### SudokuCell Class
+
+Represents a single cell in the Sudoku grid.
+
+#### Constructor
+```python
+SudokuCell(value: int, row: int, col: int)
+```
+
+#### Methods
+
+- `set_value(value: int)`: Set cell value and clear candidates
+- `is_empty() -> bool`: Check if cell is empty
+- `remove_candidate(candidate: int) -> bool`: Remove a candidate
+
+### Convenience Functions
+
+- `solve_sudoku(puzzle: List[List[int]], debug_level: int = 0) -> bool`: Simple solving function
+
+## Running Examples
+
+### Demo Script
+```bash
+python examples/demo.py
+```
+
+### Test Suite
+```bash
+python tests/test_sudoku.py
+```
+
+### Sample Puzzles
+```python
+from examples.sample_puzzles import matrix_easy_1, matrix_hard_1
+from src.sudoku import solve_sudoku
+
+# Try different difficulty levels
+print("Easy puzzle:", solve_sudoku(matrix_easy_1))
+print("Hard puzzle:", solve_sudoku(matrix_hard_1))
+```
+
+## Algorithm Details
+
+The solver uses a multi-pass approach with increasingly sophisticated techniques:
+
+1. **Initialization**: Load puzzle and initialize candidates for empty cells
+2. **Constraint Propagation**: Remove impossible candidates based on existing values
+3. **Iterative Solving**: Apply techniques in order of complexity:
+   - Naked singles (cells with one candidate)
+   - Hidden singles (values that can only go in one position)
+   - Intersection removal (advanced constraint propagation)
+   - Naked groups (pairs, triples, quads)
+   - Hidden groups (advanced group techniques)
+
+4. **Termination**: Stop when puzzle is solved or no progress can be made
+
+## Error Handling
+
+The solver includes comprehensive error handling:
+
+```python
+from src.sudoku import SudokuError
+
+try:
+    solver = SudokuSolver(invalid_puzzle)
+except SudokuError as e:
+    print(f"Invalid puzzle: {e}")
+```
+
+Common error conditions:
+- Invalid puzzle dimensions (not 9x9)
+- Invalid cell values (not 0-9)
+- Malformed input data
+
+## Performance
+
+The improved solver offers significant performance enhancements:
+
+- **Memory**: Reduced object creation and efficient data structures
+- **Speed**: Optimized algorithms with better complexity
+- **Maintainability**: Clean code structure with comprehensive documentation
+
+## Testing
+
+The project includes a comprehensive test suite covering:
+
+- ✅ Cell creation and validation
+- ✅ Puzzle solving with various difficulties
+- ✅ Error handling and edge cases
+- ✅ Performance validation
+- ✅ Original puzzle compatibility
+
+Run tests:
+```bash
+python tests/test_sudoku.py
+```
+
+## Contributing
+
+This project follows modern Python best practices:
+
+- Type hints for all functions and methods
+- Comprehensive docstrings
+- Error handling with custom exceptions
+- Clean separation of concerns
+- Extensive testing
 
 ## License
 
 Copyright © 2022 [William A. Murphy](https://github.com/wmurphy41).
 
 This project is [MIT](https://spdx.org/licenses/MIT.html) licensed.
+
+## Changelog
+
+### Recent Improvements
+- Complete rewrite with modern Python practices
+- Added comprehensive type hints and documentation
+- Implemented advanced solving techniques
+- Enhanced error handling and validation
+- Created extensive test suite
+- Optimized performance and memory usage
+
+See [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md) for detailed improvement documentation.
