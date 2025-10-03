@@ -1,7 +1,7 @@
 """
-Improved Sudoku Solver
+Sudoku Solver
 
-A comprehensive Sudoku solver implementing multiple solving techniques including:
+Main Sudoku solving logic implementing multiple solving techniques including:
 - Naked singles and hidden singles
 - Naked and hidden pairs, triples, and quads
 - Intersection removal techniques
@@ -10,109 +10,8 @@ A comprehensive Sudoku solver implementing multiple solving techniques including
 Author: Improved version with better Python practices
 """
 
-from typing import List, Set, Tuple, Optional, Iterator, Dict, Any
-from dataclasses import dataclass
-from enum import Enum
-import copy
-
-
-class Difficulty(Enum):
-    """Enumeration for puzzle difficulty levels."""
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
-    EXPERT = "expert"
-
-
-@dataclass
-class SolvingMetrics:
-    """Metrics tracking for solving performance."""
-    fill_only_candidate: int = 0
-    fill_only_option: int = 0
-    prune_gotta_be_here: int = 0
-    prune_magic_pairs: int = 0
-    prune_magic_triplets: int = 0
-    prune_magic_quads: int = 0
-    solve_loops: int = 0
-
-    def reset(self) -> None:
-        """Reset all metrics to zero."""
-        for field in self.__dataclass_fields__:
-            setattr(self, field, 0)
-
-
-class SudokuError(Exception):
-    """Custom exception for Sudoku-related errors."""
-    pass
-
-
-class SudokuCell:
-    """Represents a single cell in the Sudoku grid."""
-    
-    # Constants
-    GRID_SIZE = 9
-    BLOCK_SIZE = 3
-    VALID_VALUES = set(range(1, 10))
-    
-    def __init__(self, value: int, row: int, col: int) -> None:
-        """
-        Initialize a Sudoku cell.
-        
-        Args:
-            value: The cell value (0 for empty, 1-9 for filled)
-            row: Row index (0-8)
-            col: Column index (0-8)
-            
-        Raises:
-            SudokuError: If value or position is invalid
-        """
-        if not (0 <= value <= 9):
-            raise SudokuError(f"Invalid cell value: {value}. Must be 0-9.")
-        if not (0 <= row < self.GRID_SIZE):
-            raise SudokuError(f"Invalid row: {row}. Must be 0-8.")
-        if not (0 <= col < self.GRID_SIZE):
-            raise SudokuError(f"Invalid column: {col}. Must be 0-8.")
-            
-        self.value = value
-        self.row = row
-        self.col = col
-        self.block = (row // self.BLOCK_SIZE) * self.BLOCK_SIZE + (col // self.BLOCK_SIZE)
-        self.candidates: Set[int] = set()
-        
-        # Initialize candidates for empty cells
-        if self.value == 0:
-            self.candidates = self.VALID_VALUES.copy()
-    
-    def set_value(self, value: int) -> None:
-        """Set the cell value and clear candidates."""
-        if value not in self.VALID_VALUES:
-            raise SudokuError(f"Invalid value: {value}. Must be 1-9.")
-        self.value = value
-        self.candidates.clear()
-    
-    def is_empty(self) -> bool:
-        """Check if the cell is empty."""
-        return self.value == 0
-    
-    def remove_candidate(self, candidate: int) -> bool:
-        """
-        Remove a candidate from the cell.
-        
-        Returns:
-            True if candidate was removed, False if it wasn't present
-        """
-        if candidate in self.candidates:
-            self.candidates.discard(candidate)
-            return True
-        return False
-    
-    def __str__(self) -> str:
-        """String representation of the cell."""
-        return str(self.value) if self.value != 0 else "."
-    
-    def __repr__(self) -> str:
-        """Detailed representation of the cell."""
-        return f"SudokuCell(value={self.value}, row={self.row}, col={self.col}, candidates={self.candidates})"
+from typing import List, Set, Iterator
+from sudoku_models import SudokuCell, SudokuError, SolvingMetrics
 
 
 class SudokuSolver:
