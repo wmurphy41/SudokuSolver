@@ -1,0 +1,90 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sudoku-solver"
+version = "0.1.0"
+description = "A comprehensive Sudoku solver with OCR capabilities for extracting and solving Sudoku puzzles from images"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    # Core dependencies (required)
+    "numpy>=1.20.0",
+    
+    # OCR dependencies (optional for basic solving)
+    "opencv-python>=4.5.0",
+    "pytesseract>=0.3.8",
+]
+authors = [
+    {name = "William Murphy", email = "william@example.com"},
+]
+
+[project.optional-dependencies]
+ocr = [
+    # OCR-specific dependencies
+    "opencv-python>=4.5.0",
+    "pytesseract>=0.3.8",
+]
+dev = [
+    # Development dependencies
+    "pytest>=6.0",
+    "pytest-cov",
+    "black",
+    "flake8",
+]
+all = [
+    # All dependencies
+    "opencv-python>=4.5.0",
+    "pytesseract>=0.3.8",
+    "pytest>=6.0",
+    "pytest-cov",
+    "black",
+    "flake8",
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.scripts]
+sudoku-solver = "sudoku_solver:main"
+sudoku-ocr = "sudoku_ocr.cli:main"
+
+[project.urls]
+"Homepage" = "https://github.com/yourusername/sudoku-solver"
+"Bug Reports" = "https://github.com/yourusername/sudoku-solver/issues"
+"Source" = "https://github.com/yourusername/sudoku-solver"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+# Project structure documentation
+[tool.setuptools.package-data]
+"sudoku_ocr" = ["*.md"]
+
+# Development tooling configurations
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

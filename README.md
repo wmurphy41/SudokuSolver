@@ -1,15 +1,22 @@
 # SudokuSolver
 
-A comprehensive Python Sudoku solver implementing multiple advanced solving techniques. This project has been significantly improved from its original version with modern Python practices, better performance, and enhanced functionality.
+A comprehensive Python Sudoku solver with advanced solving techniques and OCR capabilities for extracting and solving Sudoku puzzles from images.
 
 ## Features
 
-### Solving Techniques
+### Core Solving Engine
 - **Naked Singles**: Fill cells with only one candidate
 - **Hidden Singles**: Fill cells where a value can only go in one position in a constraint group
 - **Intersection Removal**: Advanced constraint propagation techniques
 - **Naked Groups**: Handle pairs, triples, and quads of candidates
 - **Hidden Groups**: Advanced group-based solving techniques
+
+### OCR Capabilities (Optional)
+- **Image Preprocessing**: Converts images to binary format with adaptive thresholding and morphological operations
+- **Grid Detection**: Automatically detects Sudoku grid boundaries and applies perspective correction
+- **Cell Extraction**: Splits the corrected grid into 81 individual cells
+- **Multi-Method OCR**: Uses Tesseract OCR with multiple fallback preprocessing methods for robust digit recognition
+- **End-to-End Pipeline**: Complete workflow from image to solved puzzle
 
 ### Key Improvements
 - ✅ **Type Safety**: Comprehensive type hints throughout
@@ -18,38 +25,86 @@ A comprehensive Python Sudoku solver implementing multiple advanced solving tech
 - ✅ **Documentation**: Google-style docstrings and clear API
 - ✅ **Testing**: Comprehensive test suite with edge cases
 - ✅ **Modern Python**: Dataclasses, enums, and best practices
+- ✅ **Modular Design**: Separated solving engine and OCR components
 
 ## Project Structure
 
 ```
 SudokuSolver/
 ├── src/
-│   └── sudoku.py          # Main solver implementation
+│   ├── sudoku_models.py       # Data models, enums, exceptions
+│   ├── sudoku_solver.py       # Core solving engine
+│   └── sudoku_ocr/            # OCR processing modules
+│       ├── __init__.py        # Package initialization
+│       ├── cli.py            # Command-line interface
+│       ├── preprocess.py     # Image preprocessing functions
+│       ├── grid.py           # Grid detection and warping
+ │       ├── cells.py          # Cell extraction
+│       └── ocr.py            # Multi-method OCR with Tesseract
 ├── tests/
-│   └── test_sudoku.py     # Comprehensive test suite
+│   ├── test_sudoku.py        # Core solver tests
+│   ├── test_grid_stub.py    # Grid detection tests
+│   ├── test_all_images.py   # OCR comprehensive tests
+│   └── test_sudoku_json.py  # JSON validation tests
 ├── examples/
-│   ├── demo.py            # Usage demonstrations
-│   └── sample_puzzles.py  # Collection of test puzzles
+│   ├── demo.py               # Basic solver demo
+│   ├── end_to_end_example.py # Complete pipeline demo
+│   ├── sample_puzzles.py     # Test puzzles
+│   └── [example images and JSON files]
 ├── docs/
-│   └── IMPROVEMENTS.md    # Detailed improvement documentation
-└── README.md              # This file
+│   └── IMPROVEMENTS.md      # Detailed improvement documentation
+├── pyproject.toml            # Unified project configuration
+└── README.md                 # This file
 ```
 
 ## Installation
 
-No external dependencies required - uses only Python standard library.
+### Prerequisites
 
+- Python 3.8 or higher
+- For OCR features: Tesseract OCR engine
+
+### Setup
+
+1. Clone the repository:
 ```bash
 git clone https://github.com/wmurphy41/SudokuSolver.git
 cd SudokuSolver
 ```
 
+2. Install dependencies:
+
+**Core solver only (recommended for most users):**
+```bash
+pip install sudoku-solver
+```
+
+**With OCR capabilities:**
+```bash
+pip install sudoku-solver[ocr]
+```
+
+**Development setup:**
+```bash
+pip install sudoku-solver[dev]
+```
+
+**Everything:**
+```bash
+pip install sudoku-solver[all]
+```
+
+3. For OCR features, install Tesseract OCR:
+   - **Windows**: `choco install tesseract`
+   - **macOS**: `brew install tesseract`
+   - **Linux**: `sudo apt-get install tesseract-ocr`
+
 ## Quick Start
 
-### Basic Usage
+### Basic Sudoku Solving
 
 ```python
-from src.sudoku import solve_sudoku
+from src.sudoku_solver import solve_sudoku
 
 # Define a puzzle (0 = empty cell, 1-9 = filled cells)
 puzzle = [
@@ -69,10 +124,10 @@ solved = solve_sudoku(puzzle)
 print(f"Puzzle solved: {solved}")
 ```
 
-### Advanced Usage
+### Advanced Solving with Metrics
 
 ```python
-from src.sudoku import SudokuSolver
+from src.sudoku_solver import SudokuSolver
 
 # Create solver with debug output
 solver = SudokuSolver(puzzle, debug_level=1)
@@ -88,6 +143,54 @@ if solved:
     
     # Display the solved puzzle
     solver.print_grid()
+```
+
+### Loading Puzzles from JSON
+
+```python
+from src.sudoku_models import SudokuPuzzle
+
+# Load puzzle from JSON file
+puzzle_obj = SudokuPuzzle("examples/NYT-EASY-2025-09-27_puzzle.json")
+print(f"Loaded puzzle with {puzzle_obj.get_empty_cells_count()} empty cells")
+print(f"Grid preview:\n{puzzle_obj}")
+
+# Solve the loaded puzzle
+solver = SudokuSolver(puzzle_obj.puzzle)
+solved = solver.solve()
+```
+
+### Complete End-to-End Pipeline (OCR + Solving)
+
+```python
+# Run the complete pipeline example
+python examples/end_to_end_example.py
+```
+
+This will process a Sudoku image and perform the complete workflow:
+1. Load Sudoku image
+2. Extract grid using OCR
+3. Save grid as JSON
+4. Create SudokuPuzzle from JSON
+5. Solve using SudokuSolver
+6. Display results and verify solution
+
+### OCR Processing Only
+
+```bash
+# Process a Sudoku image with OCR
+python -m src.sudoku_ocr.cli --image examples/NYT-EASY-2025-09-27.png --out output
+```
+
+### OCR Advanced Options
+
+```bash
+python -m src.sudoku_ocr.cli --image examples/NYT-EASY-2025-09-27.png --out output \
+    --size 450 \
+    --pad 4 \
+    --apply-clahe \
+    --saving-cells \
+    --debug
 ```
 
 ## API Reference
@@ -120,20 +223,31 @@ SudokuSolver(puzzle: List[List[int]], debug_level: int = 0)
 - `metrics`: `SolvingMetrics` object tracking solving performance
 - `debug_level`: Current debug output level
 
-### SudokuCell Class
+### SudokuPuzzle Class
 
-Represents a single cell in the Sudoku grid.
+Represents a Sudoku puzzle loaded from a JSON file with validation.
 
 #### Constructor
 ```python
-SudokuCell(value: int, row: int, col: int)
+SudokuPuzzle(filename: str)
 ```
+
+**Parameters:**
+- `filename`: Path to JSON file containing the Sudoku puzzle
+
+**Raises:**
+- `ValueError`: If file doesn't exist, is malformed, or contains invalid data
+- `FileNotFoundError`: If the file path doesn't exist
 
 #### Methods
 
-- `set_value(value: int)`: Set cell value and clear candidates
-- `is_empty() -> bool`: Check if cell is empty
-- `remove_candidate(candidate: int) -> bool`: Remove a candidate
+- `get_empty_cells_count() -> int`: Count the number of empty cells (zeros)
+- `is_solved() -> bool`: Check if the puzzle is completely filled
+
+#### Properties
+
+- `puzzle`: `List[List[int]]` containing the loaded grid
+- `filename`: Original filename
 
 ### Convenience Functions
 
@@ -146,15 +260,25 @@ SudokuCell(value: int, row: int, col: int)
 python examples/demo.py
 ```
 
+### End-to-End Example
+```bash
+python examples/end_to_end_example.py
+```
+
 ### Test Suite
 ```bash
 python tests/test_sudoku.py
 ```
 
+### OCR Tests
+```bash
+python tests/test_all_images.py
+```
+
 ### Sample Puzzles
 ```python
 from examples.sample_puzzles import matrix_easy_1, matrix_hard_1
-from src.sudoku import solve_sudoku
+from src.sudoku_solver import solve_sudoku
 
 # Try different difficulty levels
 print("Easy puzzle:", solve_sudoku(matrix_easy_1))
@@ -162,6 +286,8 @@ print("Hard puzzle:", solve_sudoku(matrix_hard_1))
 ```
 
 ## Algorithm Details
+
+### Solving Engine
 
 The solver uses a multi-pass approach with increasingly sophisticated techniques:
 
@@ -173,15 +299,60 @@ The solver uses a multi-pass approach with increasingly sophisticated techniques
    - Intersection removal (advanced constraint propagation)
    - Naked groups (pairs, triples, quads)
    - Hidden groups (advanced group techniques)
-
 4. **Termination**: Stop when puzzle is solved or no progress can be made
+
+### OCR Pipeline
+
+1. **Preprocessing**: 
+   - Convert BGR to grayscale
+   - Apply Gaussian blur
+   - Adaptive thresholding
+   - Morphological operations
+
+2. **Grid Detection**:
+   - Find largest contour
+   - Approximate to quadrilateral
+   - Apply perspective transformation
+   - Warp to square grid
+
+3. **Cell Extraction**:
+   - Split warped grid into 9×9 cells
+   - Apply padding and resizing
+   - Ensure minimum cell size (32×32)
+
+4. **Digit Recognition**:
+   - Multi-method Tesseract OCR approach
+   - Enhanced preprocessing with larger image sizes
+   - Alternative preprocessing methods (Otsu thresholding, simple thresholding)
+   - Multiple PSM modes for robust recognition
+   - Progressive confidence thresholds for fallback methods
+
+## OCR Performance
+
+Current performance on test dataset:
+
+| Image | Accuracy | Precision | Recall | F1-Score | Status |
+|-------|----------|-----------|--------|----------|--------|
+| NYT-EASY-2025-09-27 | 100% | 100% | 100% | 100% | ✅ Perfect |
+| NYT-MED-2025-09-27 | 0% | 0% | 0% | 0% | ⚠️ Challenging |
+| NYT-HARD-2025-09-27 | 100% | 100% | 100% | 100% | ✅ Perfect |
+| NYT-EASY-2025-09-28 | 100% | 100% | 100% | 100% | ✅ Perfect |
+| NYT-MED-2025-09-28 | 100% | 100% | 100% | 100% | ✅ Perfect |
+| NYT-HARD-2025-09-28 | 100% | 100% | 100% | 100% | ✅ Perfect |
+
+**Overall Performance:**
+- **Overall Accuracy**: 83.4%
+- **Overall Precision**: 91.2%
+- **Overall Recall**: 83.4%
+- **Overall F1-Score**: 87.2%
+- **Success Rate**: 5 out of 6 images achieve perfect 100% accuracy
 
 ## Error Handling
 
 The solver includes comprehensive error handling:
 
 ```python
-from src.sudoku import SudokuError
+from src.sudoku_models import SudokuError
 
 try:
     solver = SudokuSolver(invalid_puzzle)
@@ -193,28 +364,25 @@ Common error conditions:
 - Invalid puzzle dimensions (not 9x9)
 - Invalid cell values (not 0-9)
 - Malformed input data
-
-## Performance
-
-The improved solver offers significant performance enhancements:
-
-- **Memory**: Reduced object creation and efficient data structures
-- **Speed**: Optimized algorithms with better complexity
-- **Maintainability**: Clean code structure with comprehensive documentation
+- JSON parsing errors
+- File not found errors
 
 ## Testing
 
-The project includes a comprehensive test suite covering:
+The project includes comprehensive test suites:
 
-- ✅ Cell creation and validation
-- ✅ Puzzle solving with various difficulties
-- ✅ Error handling and edge cases
-- ✅ Performance validation
-- ✅ Original puzzle compatibility
-
-Run tests:
 ```bash
+# Core solver tests
 python tests/test_sudoku.py
+
+# OCR functionality tests
+python tests/test_all_images.py
+
+# Grid detection tests
+python tests/test_grid_stub.py
+
+# JSON validation tests
+python tests/test_sudoku_json.py
 ```
 
 ## Contributing
@@ -226,6 +394,7 @@ This project follows modern Python best practices:
 - Error handling with custom exceptions
 - Clean separation of concerns
 - Extensive testing
+- Modular architecture
 
 ## License
 
@@ -242,5 +411,8 @@ This project is [MIT](https://spdx.org/licenses/MIT.html) licensed.
 - Enhanced error handling and validation
 - Created extensive test suite
 - Optimized performance and memory usage
+- Integrated OCR capabilities for end-to-end pipeline
+- Modular architecture with separated concerns
+- Unified configuration and packaging
 
 See [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md) for detailed improvement documentation.
