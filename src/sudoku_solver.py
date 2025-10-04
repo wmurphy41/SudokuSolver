@@ -28,7 +28,7 @@ class SudokuSolver:
         
         Args:
             puzzle: 9x9 grid of integers (0 for empty cells, 1-9 for filled)
-            debug_level: Debug output level (0=none, 1=basic, 2=detailed)
+            debug_level: Debug output level (0=silent, 1=informational, 2=basic, 3=detailed)
             
         Raises:
             SudokuError: If puzzle format is invalid
@@ -123,36 +123,37 @@ class SudokuSolver:
         """Count the number of empty cells remaining."""
         return sum(1 for cell in self._iterate_all_cells() if cell.is_empty())
     
-    def print_grid(self) -> None:
+    def print_grid(self, force_print: bool = True) -> None:
         """Print the current state of the grid with block separators."""
-        print("\nCurrent grid:")
-        for row in range(self.GRID_SIZE):
-            if row % self.BLOCK_SIZE == 0 and row > 0:
-                print("  " + "-" * 21)
-            
-            row_str = "  "
-            for col in range(self.GRID_SIZE):
-                if col % self.BLOCK_SIZE == 0 and col > 0:
-                    row_str += "| "
-                row_str += f"{self.grid[row][col]} "
-            print(row_str)
-        print()
-    
-    def print_candidates(self) -> None:
-        """Print candidates for all cells (debugging aid)."""
-        print("\nCandidates:")
-        for row in range(self.GRID_SIZE):
-            if row % self.BLOCK_SIZE == 0 and row > 0:
-                print()
-            
-            for col in range(self.GRID_SIZE):
-                if col % self.BLOCK_SIZE == 0 and col > 0:
-                    print(" | ", end="")
-                cell = self.grid[row][col]
-                candidates_str = str(sorted(cell.candidates)) if cell.candidates else "[]"
-                print(f"{candidates_str:>20}", end="")
+        if force_print or self.debug_level > 0:  # Print if forced or not silent
+            for row in range(self.GRID_SIZE):
+                if row % self.BLOCK_SIZE == 0 and row > 0:
+                    print("  " + "-" * 21)
+                
+                row_str = "  "
+                for col in range(self.GRID_SIZE):
+                    if col % self.BLOCK_SIZE == 0 and col > 0:
+                        row_str += "| "
+                    row_str += f"{self.grid[row][col]} "
+                print(row_str)
             print()
-        print()
+    
+    def print_candidates(self, force_print: bool = True) -> None:
+        """Print candidates for all cells (debugging aid)."""
+        if force_print or self.debug_level > 0:  # Print if forced or not silent
+            print("\nCandidates:")
+            for row in range(self.GRID_SIZE):
+                if row % self.BLOCK_SIZE == 0 and row > 0:
+                    print()
+                
+                for col in range(self.GRID_SIZE):
+                    if col % self.BLOCK_SIZE == 0 and col > 0:
+                        print(" | ", end="")
+                    cell = self.grid[row][col]
+                    candidates_str = str(sorted(cell.candidates)) if cell.candidates else "[]"
+                    print(f"{candidates_str:>20}", end="")
+                print()
+            print()
     
     def solve(self) -> bool:
         """
@@ -162,14 +163,14 @@ class SudokuSolver:
             True if puzzle is solved, False if unsolvable
         """
         self._debug_print(1, "Starting puzzle solution...")
-        self.print_grid()
+        self.print_grid(False)
         
         self.metrics.reset()
         initial_empty = self.count_empty_cells()
         
         while self.count_empty_cells() > 0:
             self.metrics.solve_loops += 1
-            self._debug_print(1, f"Solve loop: {self.metrics.solve_loops}")
+            self._debug_print(2, f"Solve loop: {self.metrics.solve_loops}")
             
             cells_filled = 0
             candidates_pruned = 0
@@ -186,16 +187,55 @@ class SudokuSolver:
             
             # If no progress made, puzzle is unsolvable with current techniques
             if cells_filled == 0 and candidates_pruned == 0:
-                self._debug_print(1, "No progress made - puzzle may be unsolvable")
+                self._debug_print(2, "No progress made - puzzle may be unsolvable")
                 break
         
         solved = self.count_empty_cells() == 0
         self._print_solution_summary(initial_empty, solved)
         return solved
     
+    def step_solve(self) -> bool:
+        """
+        Perform one pass through all solving techniques without looping.
+        
+        Returns:
+            True if puzzle is solved after this step, False otherwise
+        """
+        self._debug_print(1, "Performing one solving step...")
+        self.print_grid(False)
+        
+        # Increment solve loop counter for metrics tracking
+        self.metrics.solve_loops += 1
+        self._debug_print(2, f"Solve step: {self.metrics.solve_loops}")
+        
+        cells_filled = 0
+        candidates_pruned = 0
+        
+        # Try to fill cells
+        cells_filled += self._fill_naked_singles()
+        cells_filled += self._fill_hidden_singles()
+        
+        # If no cells filled, try pruning candidates
+        if cells_filled == 0:
+            candidates_pruned += self._prune_intersection_removal()
+            candidates_pruned += self._prune_naked_groups()
+            candidates_pruned += self._prune_hidden_groups()
+        
+        # Check if puzzle is solved
+        solved = self.count_empty_cells() == 0
+        
+        self._debug_print(2, f"Step completed: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
+        if solved:
+            self._debug_print(1, "Puzzle is now solved!")
+            self._print_solution_summary(0, solved)  # Pass 0 for initial_empty since we don't track it in step mode
+        elif cells_filled == 0 and candidates_pruned == 0:
+            self._debug_print(2, "No progress made in this step")
+        
+        return solved
+    
     def _fill_naked_singles(self) -> int:
         """Fill cells that have only one candidate."""
-        self._debug_print(1, "Checking for naked singles...")
+        self._debug_print(2, "Checking for naked singles...")
         filled_count = 0
         
         for cell in self._iterate_all_cells():
@@ -205,12 +245,12 @@ class SudokuSolver:
                 filled_count += 1
                 self.metrics.fill_only_candidate += 1
         
-        self._debug_print(1, f"Filled {filled_count} naked singles")
+        self._debug_print(2, f"Filled {filled_count} naked singles")
         return filled_count
     
     def _fill_hidden_singles(self) -> int:
         """Fill cells where a value can only go in one position in a constraint group."""
-        self._debug_print(1, "Checking for hidden singles...")
+        self._debug_print(2, "Checking for hidden singles...")
         filled_count = 0
         
         # Check blocks, rows, and columns
@@ -218,7 +258,7 @@ class SudokuSolver:
             for group_idx in range(self.GRID_SIZE):
                 filled_count += self._find_hidden_singles_in_group(group_type, group_idx)
         
-        self._debug_print(1, f"Filled {filled_count} hidden singles")
+        self._debug_print(2, f"Filled {filled_count} hidden singles")
         return filled_count
     
     def _find_hidden_singles_in_group(self, group_type: str, group_idx: int) -> int:
@@ -247,7 +287,7 @@ class SudokuSolver:
     def _fill_cell(self, cell: SudokuCell, value: int) -> None:
         """Fill a cell with a value and update constraints."""
         cell.set_value(value)
-        self._debug_print(1, f"Filled {value} at ({cell.row}, {cell.col})")
+        self._debug_print(2, f"Filled {value} at ({cell.row}, {cell.col})")
         
         # Remove value from candidates in same block, row, and column
         for other_cell in self._iterate_block(cell.block):
@@ -264,7 +304,7 @@ class SudokuSolver:
     
     def _prune_intersection_removal(self) -> int:
         """Apply intersection removal techniques."""
-        self._debug_print(1, "Applying intersection removal...")
+        self._debug_print(2, "Applying intersection removal...")
         pruned_count = 0
         
         # Check each constraint group
@@ -273,7 +313,7 @@ class SudokuSolver:
                 pruned_count += self._prune_intersection_in_group(group_type, group_idx)
         
         self.metrics.prune_gotta_be_here += pruned_count
-        self._debug_print(1, f"Pruned {pruned_count} candidates via intersection removal")
+        self._debug_print(2, f"Pruned {pruned_count} candidates via intersection removal")
         return pruned_count
     
     def _prune_intersection_in_group(self, group_type: str, group_idx: int) -> int:
@@ -353,7 +393,7 @@ class SudokuSolver:
     
     def _prune_naked_groups(self) -> int:
         """Apply naked group techniques (pairs, triples, quads)."""
-        self._debug_print(1, "Applying naked group techniques...")
+        self._debug_print(2, "Applying naked group techniques...")
         pruned_count = 0
         
         # Check each constraint group
@@ -362,7 +402,7 @@ class SudokuSolver:
                 pruned_count += self._prune_naked_groups_in_group(group_type, group_idx)
         
         self.metrics.prune_magic_pairs += pruned_count
-        self._debug_print(1, f"Pruned {pruned_count} candidates via naked groups")
+        self._debug_print(2, f"Pruned {pruned_count} candidates via naked groups")
         return pruned_count
     
     def _prune_naked_groups_in_group(self, group_type: str, group_idx: int) -> int:
@@ -428,24 +468,25 @@ class SudokuSolver:
     
     def _print_solution_summary(self, initial_empty: int, solved: bool) -> None:
         """Print a summary of the solution attempt."""
-        final_empty = self.count_empty_cells()
-        
-        print(f"\n{'='*50}")
-        print("SOLUTION SUMMARY")
-        print(f"{'='*50}")
-        print(f"Initial empty cells: {initial_empty}")
-        print(f"Final empty cells: {final_empty}")
-        print(f"Solve loops: {self.metrics.solve_loops}")
-        print(f"Solved: {'Yes' if solved else 'No'}")
-        
-        print("\nTechniques used:")
-        print(f"  Naked singles: {self.metrics.fill_only_candidate}")
-        print(f"  Hidden singles: {self.metrics.fill_only_option}")
-        print(f"  Intersection removal: {self.metrics.prune_gotta_be_here}")
-        print(f"  Naked groups: {self.metrics.prune_magic_pairs}")
-        
-        print("\nFinal grid:")
-        self.print_grid()
+        if self.debug_level > 0:  # Only print if not silent
+            final_empty = self.count_empty_cells()
+            
+            print(f"\n{'='*50}")
+            print("SOLUTION SUMMARY")
+            print(f"{'='*50}")
+            print(f"Initial empty cells: {initial_empty}")
+            print(f"Final empty cells: {final_empty}")
+            print(f"Solve loops: {self.metrics.solve_loops}")
+            print(f"Solved: {'Yes' if solved else 'No'}")
+            
+            print("\nTechniques used:")
+            print(f"  Naked singles: {self.metrics.fill_only_candidate}")
+            print(f"  Hidden singles: {self.metrics.fill_only_option}")
+            print(f"  Intersection removal: {self.metrics.prune_gotta_be_here}")
+            print(f"  Naked groups: {self.metrics.prune_magic_pairs}")
+            
+            print("\nFinal grid:")
+            self.print_grid(False)
 
 
 def solve_sudoku(puzzle: List[List[int]], debug_level: int = 0) -> bool:
@@ -454,7 +495,7 @@ def solve_sudoku(puzzle: List[List[int]], debug_level: int = 0) -> bool:
     
     Args:
         puzzle: 9x9 grid of integers (0 for empty cells, 1-9 for filled)
-        debug_level: Debug output level (0=none, 1=basic, 2=detailed)
+        debug_level: Debug output level (0=silent, 1=informational, 2=basic, 3=detailed)
         
     Returns:
         True if puzzle is solved, False otherwise
@@ -477,6 +518,6 @@ if __name__ == "__main__":
         [0, 0, 0, 0, 8, 0, 0, 7, 9]
     ]
     
-    solver = SudokuSolver(example_puzzle, debug_level=1)
+    solver = SudokuSolver(example_puzzle, debug_level=2)
     solved = solver.solve()
     print(f"Puzzle solved: {solved}")

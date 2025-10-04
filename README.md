@@ -130,7 +130,7 @@ print(f"Puzzle solved: {solved}")
 from src.sudoku_solver import SudokuSolver
 
 # Create solver with debug output
-solver = SudokuSolver(puzzle, debug_level=1)
+solver = SudokuSolver(puzzle, debug_level=2)
 solved = solver.solve()
 
 if solved:
@@ -143,6 +143,41 @@ if solved:
     
     # Display the solved puzzle
     solver.print_grid()
+```
+
+### Step-by-Step Solving
+
+```python
+from src.sudoku_solver import SudokuSolver
+
+# Create solver for step-by-step solving
+solver = SudokuSolver(puzzle, debug_level=2)
+
+# Solve step by step
+while solver.count_empty_cells() > 0:
+    step_solved = solver.step_solve()
+    print(f"Step completed. Solved: {step_solved}")
+    
+    if step_solved:
+        print("Puzzle solved!")
+        break
+    elif solver.metrics.solve_loops > 50:  # Prevent infinite loops
+        print("Too many steps, stopping")
+        break
+
+# Or force display even in silent mode
+solver.print_grid()  # Always shows grid
+solver.print_candidates()  # Always shows candidates
+```
+
+### Silent Mode for Batch Processing
+
+```python
+from src.sudoku_solver import solve_sudoku
+
+# Silent mode - no output, perfect for batch processing
+solved = solve_sudoku(puzzle, debug_level=0)
+print(f"Puzzle solved: {solved}")  # Only this output will be shown
 ```
 
 ### Loading Puzzles from JSON
@@ -206,7 +241,7 @@ SudokuSolver(puzzle: List[List[int]], debug_level: int = 0)
 
 **Parameters:**
 - `puzzle`: 9x9 grid of integers (0 for empty cells, 1-9 for filled)
-- `debug_level`: Debug output level (0=none, 1=basic, 2=detailed)
+- `debug_level`: Debug output level (0=silent, 1=informational, 2=basic, 3=detailed)
 
 **Raises:**
 - `SudokuError`: If puzzle format is invalid
@@ -214,8 +249,9 @@ SudokuSolver(puzzle: List[List[int]], debug_level: int = 0)
 #### Methods
 
 - `solve() -> bool`: Solve the puzzle and return success status
-- `print_grid()`: Display the current state of the grid
-- `print_candidates()`: Show candidates for all cells (debugging aid)
+- `step_solve() -> bool`: Perform one solving step and return success status
+- `print_grid(force_print: bool = True)`: Display the current state of the grid
+- `print_candidates(force_print: bool = True)`: Show candidates for all cells (debugging aid)
 - `count_empty_cells() -> int`: Count remaining empty cells
 
 #### Properties
@@ -252,6 +288,24 @@ SudokuPuzzle(filename: str)
 ### Convenience Functions
 
 - `solve_sudoku(puzzle: List[List[int]], debug_level: int = 0) -> bool`: Simple solving function
+
+### Debug Levels
+
+The solver supports four debug levels for different output scenarios:
+
+| Level | Name | Behavior |
+|-------|------|----------|
+| **0** | **Silent** | No output at all - perfect for batch processing |
+| **1** | **Informational** | Shows grids and summaries only |
+| **2** | **Basic** | Shows informational output plus solving technique details |
+| **3** | **Detailed** | Shows all output including detailed debugging information |
+
+### Print Function Options
+
+Both `print_grid()` and `print_candidates()` support a `force_print` parameter:
+
+- `force_print=True` (default): Always displays output regardless of debug level
+- `force_print=False`: Respects debug level settings (silent when debug_level=0)
 
 ## Running Examples
 
@@ -404,7 +458,14 @@ This project is [MIT](https://spdx.org/licenses/MIT.html) licensed.
 
 ## Changelog
 
-### Recent Improvements
+### Recent Improvements (Latest)
+- **Enhanced Debug System**: Added 4-level debug system (silent, informational, basic, detailed)
+- **Step-by-Step Solving**: New `step_solve()` method for interactive puzzle solving
+- **Flexible Print Functions**: `print_grid()` and `print_candidates()` with `force_print` parameter
+- **Silent Mode**: Complete output suppression for batch processing
+- **Improved API**: Better control over solver output and behavior
+
+### Previous Improvements
 - Complete rewrite with modern Python practices
 - Added comprehensive type hints and documentation
 - Implemented advanced solving techniques
