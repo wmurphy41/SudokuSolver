@@ -152,7 +152,7 @@ def run_end_to_end_test(image_path: str, output_dir: str = "e2e_output"):
     # Step 7: Verify against expected solution (if available)
     print("Step 7: Verification...")
     
-    expected_file = Path(f"{image_file.stem}_puzzle.json")
+    expected_file = Path(f"examples_data/{image_file.stem}_puzzle.json")
     if expected_file.exists():
         try:
             with open(expected_file, 'r') as f:
@@ -203,11 +203,11 @@ def run_end_to_end_test(image_path: str, output_dir: str = "e2e_output"):
 def main():
     """Main function to run the end-to-end test."""
     
-    # Test with one of the example images (now in same directory)
+    # Test with one of the example images (now in examples_data directory)
     test_images = [
-        "NYT-EASY-2025-09-27.png",
-        "NYT-MED-2025-09-27.png", 
-        "NYT-HARD-2025-09-27.png"
+        "examples_data/NYT-EASY-2025-09-27.png",
+        "examples_data/NYT-MED-2025-09-27.png", 
+        "examples_data/NYT-HARD-2025-09-27.png"
     ]
     
     # Try each image until one works

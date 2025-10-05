@@ -13,7 +13,7 @@ from typing import Dict, List, Tuple
 import re
 
 # Add src to path
-sys.path.append('src')
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from sudoku_ocr.ocr import ocr_cells, to_grid
 from sudoku_ocr.grid import find_and_warp
@@ -23,7 +23,7 @@ import cv2
 
 def parse_test_data() -> Dict[str, str]:
     """Parse the TestData.txt file to extract expected outputs."""
-    test_data_path = Path("data/raw/TestData.txt")
+    test_data_path = Path(os.path.join(os.path.dirname(__file__), "test_data", "TestData.txt"))
     
     if not test_data_path.exists():
         print(f"Error: Test data file not found: {test_data_path}")
@@ -225,7 +225,7 @@ def main():
     }
     
     for filename, expected in expected_outputs.items():
-        image_path = f"data/raw/{filename}"
+        image_path = os.path.join(os.path.dirname(__file__), "test_data", filename)
         
         if not os.path.exists(image_path):
             print(f"Warning: Image file not found: {image_path}")

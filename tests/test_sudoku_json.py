@@ -354,7 +354,7 @@ def main():
     """Main function to run the test."""
     if len(sys.argv) < 3:
         print("Usage: python test_sudoku_json.py <test_data_file> <images_dir> [output_dir]")
-        print("Example: python test_sudoku_json.py data/raw/TestData.txt data/raw")
+        print("Example: python test_sudoku_json.py test_data/TestData.txt test_data")
         sys.exit(1)
     
     test_data_file = sys.argv[1]

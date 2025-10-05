@@ -12,7 +12,8 @@ from typing import List
 # Add the src directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from sudoku import SudokuSolver, SudokuCell, SudokuError, solve_sudoku
+from sudoku_solver import SudokuSolver, solve_sudoku
+from sudoku_models import SudokuCell, SudokuError
 
 
 class TestSudokuCell:
@@ -222,7 +223,7 @@ def run_all_tests():
     cell_tests.test_invalid_cell_positions()
     cell_tests.test_set_value()
     cell_tests.test_remove_candidate()
-    print("✓ SudokuCell tests passed")
+    print("+ SudokuCell tests passed")
     
     # Test SudokuSolver class
     print("\nTesting SudokuSolver class...")
@@ -232,20 +233,20 @@ def run_all_tests():
     solver_tests.test_invalid_puzzle_values()
     solver_tests.test_simple_puzzle_solving()
     solver_tests.test_already_solved_puzzle()
-    print("✓ SudokuSolver tests passed")
+    print("+ SudokuSolver tests passed")
     
     # Test convenience function
     print("\nTesting convenience function...")
     test_convenience_function()
-    print("✓ Convenience function tests passed")
+    print("+ Convenience function tests passed")
     
     # Test original puzzles
     print("\nTesting original puzzles...")
     test_original_puzzles()
-    print("✓ Original puzzle tests passed")
+    print("+ Original puzzle tests passed")
     
     print("\n" + "="*50)
-    print("ALL TESTS PASSED! 🎉")
+    print("ALL TESTS PASSED! ***")
     print("="*50)
 
 

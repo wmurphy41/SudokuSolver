@@ -42,15 +42,21 @@ SudokuSolver/
  │       ├── cells.py          # Cell extraction
 │       └── ocr.py            # Multi-method OCR with Tesseract
 ├── tests/
+│   ├── test_data/            # Test data files (images, JSON, expected outputs)
+│   │   ├── TestData.txt      # Test cases with expected outputs
+│   │   ├── *.png             # Test images
+│   │   └── *.json            # Test puzzle files
 │   ├── test_sudoku.py        # Core solver tests
 │   ├── test_grid_stub.py    # Grid detection tests
 │   ├── test_all_images.py   # OCR comprehensive tests
 │   └── test_sudoku_json.py  # JSON validation tests
 ├── examples/
+│   ├── examples_data/        # Example data files (images, JSON puzzles)
+│   │   ├── *.png             # Example Sudoku images
+│   │   └── *.json            # Example puzzle files
 │   ├── demo.py               # Basic solver demo
 │   ├── end_to_end_example.py # Complete pipeline demo
-│   ├── sample_puzzles.py     # Test puzzles
-│   └── [example images and JSON files]
+│   └── sample_puzzles.py     # Test puzzles
 ├── docs/
 │   └── IMPROVEMENTS.md      # Detailed improvement documentation
 ├── pyproject.toml            # Unified project configuration
@@ -186,7 +192,7 @@ print(f"Puzzle solved: {solved}")  # Only this output will be shown
 from src.sudoku_models import SudokuPuzzle
 
 # Load puzzle from JSON file
-puzzle_obj = SudokuPuzzle("examples/NYT-EASY-2025-09-27_puzzle.json")
+puzzle_obj = SudokuPuzzle("examples/examples_data/NYT-EASY-2025-09-27_puzzle.json")
 print(f"Loaded puzzle with {puzzle_obj.get_empty_cells_count()} empty cells")
 print(f"Grid preview:\n{puzzle_obj}")
 
@@ -214,13 +220,13 @@ This will process a Sudoku image and perform the complete workflow:
 
 ```bash
 # Process a Sudoku image with OCR
-python -m src.sudoku_ocr.cli --image examples/NYT-EASY-2025-09-27.png --out output
+python -m src.sudoku_ocr.cli --image examples/examples_data/NYT-EASY-2025-09-27.png --out output
 ```
 
 ### OCR Advanced Options
 
 ```bash
-python -m src.sudoku_ocr.cli --image examples/NYT-EASY-2025-09-27.png --out output \
+python -m src.sudoku_ocr.cli --image examples/examples_data/NYT-EASY-2025-09-27.png --out output \
     --size 450 \
     --pad 4 \
     --apply-clahe \
@@ -459,6 +465,10 @@ This project is [MIT](https://spdx.org/licenses/MIT.html) licensed.
 ## Changelog
 
 ### Recent Improvements (Latest)
+- **Project Organization**: Reorganized test and example data files into dedicated subdirectories
+  - Tests now use `tests/test_data/` for all test data files (images, JSON, expected outputs)
+  - Examples now use `examples/examples_data/` for all data files (images, JSON puzzles)
+  - Improved project structure with clear separation of code and data files
 - **Enhanced Debug System**: Added 4-level debug system (silent, informational, basic, detailed)
 - **Step-by-Step Solving**: New `step_solve()` method for interactive puzzle solving
 - **Flexible Print Functions**: `print_grid()` and `print_candidates()` with `force_print` parameter

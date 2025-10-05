@@ -1,0 +1,98 @@
+{
+  "test_cases": [
+    {
+      "image": "NYT-EASY-2025-09-27.png",
+      "status": "success",
+      "comparison": {
+        "correct": 0,
+        "wrong": 16,
+        "missed": 14,
+        "false_positives": 22,
+        "total_filled": 30,
+        "accuracy": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0,
+        "errors": [
+          "MISS r0c0: expected 5, got empty",
+          "WRONG r0c1: expected 3, got 2",
+          "WRONG r0c4: expected 7, got 8",
+          "FP r0c6: expected empty, got 3",
+          "WRONG r1c0: expected 6, got 4",
+          "FP r1c1: expected empty, got 5",
+          "FP r1c2: expected empty, got 9",
+          "MISS r1c3: expected 1, got empty",
+          "MISS r1c4: expected 9, got empty",
+          "WRONG r1c5: expected 5, got 7"
+        ]
+      }
+    },
+    {
+      "image": "NYT-MED-2025-09-27.png",
+      "status": "success",
+      "comparison": {
+        "correct": 0,
+        "wrong": 7,
+        "missed": 16,
+        "false_positives": 16,
+        "total_filled": 23,
+        "accuracy": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0,
+        "errors": [
+          "FP r0c0: expected empty, got 1",
+          "WRONG r0c3: expected 2, got 5",
+          "WRONG r0c5: expected 7, got 3",
+          "MISS r0c8: expected 5, got empty",
+          "MISS r1c0: expected 3, got empty",
+          "FP r1c2: expected empty, got 5",
+          "WRONG r1c3: expected 9, got 7",
+          "FP r1c4: expected empty, got 6",
+          "MISS r1c6: expected 4, got empty",
+          "MISS r1c8: expected 1, got empty"
+        ]
+      }
+    },
+    {
+      "image": "NYT-HARD-2025-09-27.png",
+      "status": "success",
+      "comparison": {
+        "correct": 0,
+        "wrong": 0,
+        "missed": 0,
+        "false_positives": 23,
+        "total_filled": 0,
+        "accuracy": 0,
+        "precision": 0.0,
+        "recall": 0,
+        "f1_score": 0,
+        "errors": [
+          "FP r0c2: expected empty, got 7",
+          "FP r0c5: expected empty, got 5",
+          "FP r1c3: expected empty, got 4",
+          "FP r1c6: expected empty, got 6",
+          "FP r2c1: expected empty, got 3",
+          "FP r2c2: expected empty, got 6",
+          "FP r2c3: expected empty, got 1",
+          "FP r2c6: expected empty, got 9",
+          "FP r2c8: expected empty, got 5",
+          "FP r3c0: expected empty, got 8"
+        ]
+      }
+    }
+  ],
+  "overall_stats": {
+    "total_tests": 3,
+    "successful_tests": 3,
+    "failed_tests": 0,
+    "total_correct": 0,
+    "total_wrong": 23,
+    "total_missed": 30,
+    "total_false_positives": 61,
+    "overall_accuracy": 0.0,
+    "overall_precision": 0.0,
+    "overall_recall": 0.0,
+    "overall_f1_score": 0
+  }
+}

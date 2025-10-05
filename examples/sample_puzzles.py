@@ -6,7 +6,7 @@ import os
 # Add the src directory to the path so we can import the solver
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from sudoku import *
+from sudoku_solver import *
 
 matrix_easy_1 = [
     [9, 4, 7, 0, 5, 3, 1, 0, 0],

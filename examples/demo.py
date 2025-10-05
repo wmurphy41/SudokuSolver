@@ -8,7 +8,7 @@ import os
 # Add the src directory to the path so we can import the solver
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from sudoku import solve_sudoku, SudokuSolver
+from sudoku_solver import solve_sudoku, SudokuSolver
 
 
 def main():
