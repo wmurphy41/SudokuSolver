@@ -10,14 +10,14 @@ WORKDIR /app
 
 # Copy package files for dependency installation
 # This layer will be cached if package files don't change
-COPY package*.json ./
+COPY frontend/package*.json ./
 
 # Install dependencies
 # --frozen-lockfile ensures exact versions from package-lock.json
 RUN npm ci --frozen-lockfile
 
 # Copy source code
-COPY . .
+COPY frontend/ .
 
 # Build the React application for production
 # This creates optimized, minified files in the 'dist' directory
@@ -28,7 +28,7 @@ FROM nginx:alpine
 
 # Copy custom Nginx configuration
 # This replaces the default nginx.conf with our custom routing rules
-COPY ../nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
 
 # Copy built React application from build stage
 # The 'dist' directory contains the production build

@@ -34,8 +34,10 @@ services:
 
   # Nginx + React frontend service
   web:
-    # Build the frontend from the frontend directory (relative to web/)
-    build: ./frontend
+    # Build the frontend with context including nginx config
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     
     # Container name for easy reference
     container_name: sudoku-web
