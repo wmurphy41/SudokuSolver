@@ -230,6 +230,10 @@ class SudokuSolver:
             self._print_solution_summary(0, solved)  # Pass 0 for initial_empty since we don't track it in step mode
         elif cells_filled == 0 and candidates_pruned == 0:
             self._debug_print(2, "No progress made in this step")
+        else:
+            self._debug_print(1, "Progress made in this step.  Resulting puzzle:")
+            self.print_grid(False)
+            self._debug_print(2, "Step completed: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
         
         return solved
     

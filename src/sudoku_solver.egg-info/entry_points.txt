@@ -1,0 +1,3 @@
+[console_scripts]
+sudoku-ocr = sudoku_ocr.cli:main
+sudoku-solver = sudoku_solver:main
