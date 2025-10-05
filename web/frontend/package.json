@@ -1,0 +1,10 @@
+{
+  "name": "sudoku-solver-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for SudokuSolver web application",
+  "scripts": {
+    "build": "echo 'Frontend not yet scaffolded' && mkdir -p dist && echo '<html><body><h1>SudokuSolver Frontend Coming Soon</h1><p>This is a placeholder until the React frontend is scaffolded.</p></body></html>' > dist/index.html"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

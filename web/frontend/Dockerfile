@@ -13,8 +13,8 @@ WORKDIR /app
 COPY frontend/package*.json ./
 
 # Install dependencies
-# --frozen-lockfile ensures exact versions from package-lock.json
-RUN npm ci --frozen-lockfile
+# Use npm install for now (will switch to npm ci once package-lock.json exists)
+RUN npm install
 
 # Copy source code
 COPY frontend/ .
