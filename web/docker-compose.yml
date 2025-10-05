@@ -1,13 +1,11 @@
 # Docker Compose configuration for SudokuSolver web application
 # This file defines the services needed to run the full-stack application
 
-version: '3.8'
-
 services:
   # FastAPI backend service
   backend:
-    # Build the backend from the web/backend directory
-    build: ./web/backend
+    # Build the backend from the backend directory (relative to web/)
+    build: ./backend
     
     # Container name for easy reference
     container_name: sudoku-backend
@@ -36,8 +34,8 @@ services:
 
   # Nginx + React frontend service
   web:
-    # Build the frontend from the web/frontend directory
-    build: ./web/frontend
+    # Build the frontend from the frontend directory (relative to web/)
+    build: ./frontend
     
     # Container name for easy reference
     container_name: sudoku-web
