@@ -1,0 +1,15 @@
+# FastAPI backend dependencies for SudokuSolver web application
+# These packages provide the core functionality for the REST API
+
+# Web framework for building APIs
+fastapi==0.104.1
+
+# ASGI server for running FastAPI applications
+uvicorn[standard]==0.24.0
+
+# Data validation and serialization using Python type annotations
+pydantic==2.5.0
+
+# Additional dependencies that may be needed for production
+# python-multipart==0.0.6  # For handling form data (uncomment if needed)
+# python-jose[cryptography]==3.3.0  # For JWT tokens (uncomment if needed)
