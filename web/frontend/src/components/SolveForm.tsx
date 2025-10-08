@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { solve } from '../services/api';
-import type { Difficulty } from '../types/api';
 
 /**
  * SolveForm Component
@@ -10,7 +9,6 @@ import type { Difficulty } from '../types/api';
  */
 export default function SolveForm() {
   const [puzzle, setPuzzle] = useState<string>('');
-  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [loading, setLoading] = useState<boolean>(false);
   const [solution, setSolution] = useState<string>('');
   const [message, setMessage] = useState<string>('');
@@ -31,7 +29,7 @@ export default function SolveForm() {
     setMessage('');
 
     try {
-      const response = await solve({ puzzle, difficulty });
+      const response = await solve({ puzzle });
       
       if (response.success) {
         setSolution(response.solution);
@@ -74,15 +72,6 @@ export default function SolveForm() {
     border: '1px solid #ccc',
     borderRadius: '4px',
     resize: 'vertical',
-  };
-
-  const selectStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '10px',
-    fontSize: '14px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    backgroundColor: 'white',
   };
 
   const buttonStyle: React.CSSProperties = {
@@ -135,23 +124,6 @@ export default function SolveForm() {
             placeholder="Enter puzzle as 81-character string (e.g., '000000000123...') or JSON string. Use 0 for empty cells."
             disabled={loading}
           />
-        </div>
-
-        <div style={formGroupStyle}>
-          <label htmlFor="difficulty" style={labelStyle}>
-            Difficulty
-          </label>
-          <select
-            id="difficulty"
-            style={selectStyle}
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-            disabled={loading}
-          >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
         </div>
 
         <button

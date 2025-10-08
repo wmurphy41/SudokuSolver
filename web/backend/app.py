@@ -20,7 +20,6 @@ app = FastAPI(
 class SolveRequest(BaseModel):
     """Model for sudoku solve requests."""
     puzzle: str  # Will contain the sudoku puzzle data
-    difficulty: str = "easy"  # Optional difficulty level
 
 class SolveResponse(BaseModel):
     """Model for sudoku solve responses."""
@@ -56,7 +55,7 @@ async def solve_sudoku(request: SolveRequest) -> SolveResponse:
     return SolveResponse(
         solution=request.puzzle,  # Echo the puzzle for now
         success=True,
-        message=f"Echoed puzzle with difficulty: {request.difficulty}"
+        message="Puzzle received successfully"
     )
 
 if __name__ == "__main__":

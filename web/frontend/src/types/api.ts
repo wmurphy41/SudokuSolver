@@ -10,19 +10,14 @@
  * - OCR result types for image-based puzzle input
  */
 
-// Difficulty levels for sudoku puzzles
-export type Difficulty = 'easy' | 'medium' | 'hard' | string;
-
 /**
  * Request payload for solving a sudoku puzzle
  * 
  * @property puzzle - Currently an 81-character string or JSON-ish string
  *                    May evolve to number[][] (9x9 grid) in the future
- * @property difficulty - Optional difficulty level hint
  */
 export interface SolveRequest {
-  puzzle: string;          // 81-char string or JSON-ish string for now
-  difficulty?: Difficulty; // optional
+  puzzle: string;  // 81-char string or JSON-ish string for now
 }
 
 /**
