@@ -12,14 +12,15 @@ WORKDIR /app
 
 # Copy package files for dependency installation
 # This layer will be cached if package files don't change
-COPY package*.json ./
+# Build context is web/, so we need to specify frontend/ subdirectory
+COPY frontend/package*.json ./
 
 # Install dependencies with npm ci for reproducible builds
 # npm ci is faster and more reliable than npm install for CI/CD
 RUN npm ci
 
 # Copy all source code and configuration files
-COPY . .
+COPY frontend/ .
 
 # Build the React application for production
 # This creates optimized, minified files in the 'dist' directory
