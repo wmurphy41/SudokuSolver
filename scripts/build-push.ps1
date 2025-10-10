@@ -61,12 +61,14 @@ try {
 }
 
 # Create buildx builder if it doesn't exist
-$builderExists = docker buildx inspect multiarch 2>$null
-if ($LASTEXITCODE -ne 0) {
+Write-Host "Checking for buildx builder..." -ForegroundColor Yellow
+$builderCheck = docker buildx ls 2>&1 | Select-String "multiarch"
+if (-not $builderCheck) {
     Write-Host "Creating buildx builder for multi-platform builds..." -ForegroundColor Yellow
     docker buildx create --name multiarch --use
     docker buildx inspect --bootstrap
 } else {
+    Write-Host "Using existing buildx builder..." -ForegroundColor Yellow
     docker buildx use multiarch
 }
 
