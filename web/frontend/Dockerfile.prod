@@ -13,9 +13,9 @@ WORKDIR /app
 # Build context is web/, so we need to specify frontend/ subdirectory
 COPY frontend/package*.json ./
 
-# Install dependencies
-# Using npm install for better compatibility on resource-constrained servers
-RUN npm install --production=false
+# Install dependencies with npm ci for reproducible builds
+# npm ci is faster and more reliable than npm install for CI/CD
+RUN npm ci
 
 # Copy all source code and configuration files
 COPY frontend/ .
@@ -45,5 +45,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Start Nginx server
 # Nginx runs in foreground mode for Docker
 CMD ["nginx", "-g", "daemon off;"]
-
 

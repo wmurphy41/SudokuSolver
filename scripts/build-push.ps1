@@ -61,14 +61,12 @@ try {
 }
 
 # Create buildx builder if it doesn't exist
-Write-Host "Checking for buildx builder..." -ForegroundColor Yellow
-$builderCheck = docker buildx ls 2>&1 | Select-String "multiarch"
-if (-not $builderCheck) {
+$builderExists = docker buildx inspect multiarch 2>$null
+if ($LASTEXITCODE -ne 0) {
     Write-Host "Creating buildx builder for multi-platform builds..." -ForegroundColor Yellow
     docker buildx create --name multiarch --use
     docker buildx inspect --bootstrap
 } else {
-    Write-Host "Using existing buildx builder..." -ForegroundColor Yellow
     docker buildx use multiarch
 }
 
@@ -102,7 +100,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "[OK] Backend image built and pushed successfully!" -ForegroundColor Green
+Write-Host "✓ Backend image built and pushed successfully!" -ForegroundColor Green
 
 # Build and push web (frontend + nginx) image
 Write-Host ""
@@ -123,12 +121,12 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "[OK] Web image built and pushed successfully!" -ForegroundColor Green
+Write-Host "✓ Web image built and pushed successfully!" -ForegroundColor Green
 
 # Success summary
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "[OK] All images built and pushed!" -ForegroundColor Green
+Write-Host "✓ All images built and pushed!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Images pushed to GHCR:"
@@ -143,3 +141,4 @@ Write-Host "  2. Run: docker compose pull"
 Write-Host "  3. Run: docker compose up -d"
 Write-Host ""
 Write-Host "Done!" -ForegroundColor Green
+
