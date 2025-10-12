@@ -4,8 +4,10 @@
 services:
   # FastAPI backend service
   backend:
-    # Build the backend from the backend directory (relative to web/)
-    build: ./backend
+    # Build the backend with context at project root to access src/
+    build:
+      context: ..
+      dockerfile: web/backend/Dockerfile
     
     # Container name for easy reference
     container_name: sudoku-backend

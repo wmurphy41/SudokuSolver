@@ -12,14 +12,18 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file first for better Docker layer caching
-COPY requirements.txt .
+# Build context is project root, so specify web/backend path
+COPY web/backend/requirements.txt .
 
 # Install Python dependencies
 # --no-cache-dir reduces image size by not storing pip cache
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy SudokuSolver source code (solver engine)
+COPY src/ /app/src/
+
+# Copy backend application code
+COPY web/backend/ /app/
 
 # Expose port 8000 for FastAPI application
 EXPOSE 8000
