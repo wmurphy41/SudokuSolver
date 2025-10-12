@@ -88,11 +88,12 @@ Write-Host "Building and pushing backend image..." -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 
 # Platform: linux/amd64 for AWS Lightsail x86_64 instances
+# Build context is project root (.) to access src/ directory
 docker buildx build --platform linux/amd64 `
     -t "${BACKEND_IMAGE}:${Version}" `
     -t "${BACKEND_IMAGE}:latest" `
     -f web/backend/Dockerfile `
-    web/backend `
+    . `
     --push
 
 if ($LASTEXITCODE -ne 0) {

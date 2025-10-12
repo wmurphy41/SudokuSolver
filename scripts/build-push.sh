@@ -93,11 +93,12 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Building and pushing backend image...${NC}"
 echo -e "${GREEN}========================================${NC}"
 # Platform: linux/amd64 for AWS Lightsail x86_64 instances
+# Build context is project root (.) to access src/ directory
 docker buildx build --platform linux/amd64 \
     -t "${BACKEND_IMAGE}:${VERSION}" \
     -t "${BACKEND_IMAGE}:latest" \
     -f web/backend/Dockerfile \
-    web/backend \
+    . \
     --push
 
 if [ $? -ne 0 ]; then
