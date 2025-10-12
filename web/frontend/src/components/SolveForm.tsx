@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { solve } from '../services/api';
+import type { SolveResponse } from '../types/api';
+import ResultPanel from './ResultPanel';
 
 /**
  * SolveForm Component
@@ -10,9 +12,8 @@ import { solve } from '../services/api';
 export default function SolveForm() {
   const [puzzle, setPuzzle] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [solution, setSolution] = useState<string>('');
-  const [message, setMessage] = useState<string>('');
-  const [error, setError] = useState<string>('');
+  const [result, setResult] = useState<SolveResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,25 +21,21 @@ export default function SolveForm() {
     // Basic validation
     if (!puzzle.trim()) {
       setError('Please enter a puzzle');
+      setResult(null);
       return;
     }
 
     setLoading(true);
-    setError('');
-    setSolution('');
-    setMessage('');
+    setError(null);
+    setResult(null);
 
     try {
       const response = await solve({ puzzle });
-      
-      if (response.success) {
-        setSolution(response.solution);
-        setMessage(response.message);
-      } else {
-        setError(response.message);
-      }
+      setResult(response);
+      setError(null); // Clear any previous errors on success
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to solve puzzle');
+      setResult(null);
     } finally {
       setLoading(false);
     }
@@ -87,28 +84,6 @@ export default function SolveForm() {
     transition: 'background-color 0.2s',
   };
 
-  const resultBoxStyle: React.CSSProperties = {
-    marginTop: '20px',
-    padding: '16px',
-    borderRadius: '4px',
-    backgroundColor: '#f8f9fa',
-    border: '1px solid #dee2e6',
-  };
-
-  const errorBoxStyle: React.CSSProperties = {
-    ...resultBoxStyle,
-    backgroundColor: '#f8d7da',
-    border: '1px solid #f5c6cb',
-    color: '#721c24',
-  };
-
-  const successBoxStyle: React.CSSProperties = {
-    ...resultBoxStyle,
-    backgroundColor: '#d4edda',
-    border: '1px solid #c3e6cb',
-    color: '#155724',
-  };
-
   return (
     <div style={containerStyle}>
       <form onSubmit={handleSubmit}>
@@ -145,34 +120,8 @@ export default function SolveForm() {
         </button>
       </form>
 
-      {/* Error message */}
-      {error && (
-        <div style={errorBoxStyle}>
-          <strong>Error:</strong> {error}
-        </div>
-      )}
-
-      {/* Success message and solution */}
-      {solution && (
-        <div style={successBoxStyle}>
-          <div style={{ marginBottom: '12px' }}>
-            <strong>Status:</strong> {message}
-          </div>
-          <div>
-            <strong>Solution:</strong>
-            <pre style={{ 
-              marginTop: '8px', 
-              padding: '10px', 
-              backgroundColor: 'white',
-              borderRadius: '4px',
-              overflow: 'auto',
-              fontSize: '12px',
-            }}>
-              {solution}
-            </pre>
-          </div>
-        </div>
-      )}
+      {/* Result panel - shows success/fail status, solution, and message */}
+      <ResultPanel result={result} error={error} />
     </div>
   );
 }

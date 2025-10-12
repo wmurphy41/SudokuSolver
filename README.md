@@ -11,6 +11,14 @@ A comprehensive Python Sudoku solver with advanced solving techniques and OCR ca
 - **Naked Groups**: Handle pairs, triples, and quads of candidates
 - **Hidden Groups**: Advanced group-based solving techniques
 
+### Web Application (Beta)
+- **React + TypeScript Frontend**: Modern single-page application with responsive design
+- **FastAPI Backend**: RESTful API with automatic validation and documentation
+- **Real-time Solving**: Submit puzzles and receive solutions via API
+- **Docker Deployment**: Containerized architecture with Nginx reverse proxy
+- **Result Display**: Shows success/fail status, solution, and detailed messages
+- **Note**: Frontend UI currently echoes puzzle input; integration with core SudokuSolver logic is in progress
+
 ### OCR Capabilities (Optional)
 - **Image Preprocessing**: Converts images to binary format with adaptive thresholding and morphological operations
 - **Grid Detection**: Automatically detects Sudoku grid boundaries and applies perspective correction
@@ -41,6 +49,24 @@ SudokuSolver/
 │       ├── grid.py           # Grid detection and warping
  │       ├── cells.py          # Cell extraction
 │       └── ocr.py            # Multi-method OCR with Tesseract
+├── web/                       # Web application (React + FastAPI)
+│   ├── backend/              # FastAPI backend
+│   │   ├── app.py           # REST API endpoints
+│   │   ├── requirements.txt # Python dependencies
+│   │   └── Dockerfile       # Backend container
+│   ├── frontend/            # React + TypeScript frontend
+│   │   ├── src/             # Source code
+│   │   │   ├── components/  # React components
+│   │   │   ├── services/    # API service layer
+│   │   │   └── types/       # TypeScript types
+│   │   ├── package.json     # Node dependencies
+│   │   └── Dockerfile.prod  # Production frontend container
+│   ├── nginx/               # Nginx reverse proxy config
+│   ├── docker-compose.yml   # Container orchestration
+│   └── README*.md           # Web app documentation
+├── scripts/                  # Build and deployment scripts
+│   ├── build-push.sh        # Linux/Mac image builder
+│   └── build-push.ps1       # Windows image builder
 ├── tests/
 │   ├── test_data/            # Test data files (images, JSON, expected outputs)
 │   │   ├── TestData.txt      # Test cases with expected outputs
@@ -58,7 +84,8 @@ SudokuSolver/
 │   ├── end_to_end_example.py # Complete pipeline demo
 │   └── sample_puzzles.py     # Test puzzles
 ├── docs/
-│   └── IMPROVEMENTS.md      # Detailed improvement documentation
+│   ├── IMPROVEMENTS.md      # Detailed improvement documentation
+│   └── application_flow.md  # Web app architecture documentation
 ├── pyproject.toml            # Unified project configuration
 └── README.md                 # This file
 ```
@@ -312,6 +339,67 @@ Both `print_grid()` and `print_candidates()` support a `force_print` parameter:
 
 - `force_print=True` (default): Always displays output regardless of debug level
 - `force_print=False`: Respects debug level settings (silent when debug_level=0)
+
+## Web Application
+
+The SudokuSolver includes a modern web interface for solving puzzles through a browser.
+
+### Quick Start (Local Development)
+
+**Start Backend:**
+```bash
+cd web/backend
+pip install -r requirements.txt
+python -m uvicorn app:app --reload --host 127.0.0.1 --port 8000
+```
+
+**Start Frontend (separate terminal):**
+```bash
+cd web/frontend
+npm install
+npm run dev
+```
+
+Access at: `http://localhost:5173`
+
+### Docker Deployment
+
+**Local Testing:**
+```bash
+cd web
+docker compose up --build
+```
+
+Access at: `http://localhost`
+
+**Production Deployment:**
+See [web/README-deploy-images.md](web/README-deploy-images.md) for complete deployment instructions using pre-built Docker images.
+
+### API Endpoints
+
+**Health Check:**
+- `GET /api/healthz` - Returns `{"status": "ok"}`
+
+**Solve Puzzle:**
+- `POST /api/solve` - Accepts `{"puzzle": "string"}`, returns `{"solution": "string", "success": boolean, "message": "string"}`
+- **Note**: Currently echoes input; integration with core SudokuSolver logic in progress
+
+### Features
+
+- ✅ **Modern UI**: React + TypeScript single-page application
+- ✅ **Type-Safe API**: FastAPI with Pydantic validation
+- ✅ **Result Display**: Shows success/fail status, solution, and detailed messages with all three backend response fields
+- ✅ **Error Handling**: Network errors and validation errors properly displayed
+- ✅ **Accessibility**: ARIA labels and live regions for screen readers
+- ✅ **Containerized**: Docker-based deployment with Nginx reverse proxy
+- 🚧 **In Progress**: Integration with core SudokuSolver backend logic
+
+### Documentation
+
+- [Web Application Overview](web/README.md)
+- [Application Flow](docs/application_flow.md)
+- [Deployment Guide](web/README-deploy-images.md)
+- [Frontend README](web/frontend/README.md)
 
 ## Running Examples
 
