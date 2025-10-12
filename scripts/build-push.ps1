@@ -36,8 +36,8 @@ if ($Version -notmatch '^v\d+\.\d+\.\d+') {
 # Check for GHCR_TOKEN
 if (-not $env:GHCR_TOKEN) {
     Write-Host "Error: GHCR_TOKEN environment variable not set" -ForegroundColor Red
-    Write-Host "Please set your GitHub Personal Access Token:"
-    Write-Host '  $env:GHCR_TOKEN = "your_github_token"'
+    Write-Host "Please set your GitHub Personal Access Token:" -ForegroundColor Red
+    Write-Host '  $env:GHCR_TOKEN = "your_github_token"' -ForegroundColor Yellow
     exit 1
 }
 
@@ -46,7 +46,7 @@ try {
     docker version | Out-Null
 } catch {
     Write-Host "Error: Docker not found" -ForegroundColor Red
-    Write-Host "Please install Docker Desktop: https://www.docker.com/products/docker-desktop"
+    Write-Host "Please install Docker Desktop: https://www.docker.com/products/docker-desktop" -ForegroundColor Yellow
     exit 1
 }
 
@@ -55,8 +55,8 @@ try {
     docker buildx version | Out-Null
 } catch {
     Write-Host "Error: docker buildx not found" -ForegroundColor Red
-    Write-Host "Please ensure Docker Desktop is installed and buildx is enabled"
-    Write-Host "Run: docker buildx install"
+    Write-Host "Please ensure Docker Desktop is installed and buildx is enabled" -ForegroundColor Yellow
+    Write-Host "Run: docker buildx install" -ForegroundColor Yellow
     exit 1
 }
 
@@ -100,7 +100,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "✓ Backend image built and pushed successfully!" -ForegroundColor Green
+Write-Host "Backend image built and pushed successfully!" -ForegroundColor Green
 
 # Build and push web (frontend + nginx) image
 Write-Host ""
@@ -121,24 +121,24 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "✓ Web image built and pushed successfully!" -ForegroundColor Green
+Write-Host "Web image built and pushed successfully!" -ForegroundColor Green
 
 # Success summary
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "✓ All images built and pushed!" -ForegroundColor Green
+Write-Host "All images built and pushed!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Images pushed to GHCR:"
-Write-Host "  Backend: ${BACKEND_IMAGE}:${Version}"
-Write-Host "           ${BACKEND_IMAGE}:latest"
-Write-Host "  Web:     ${WEB_IMAGE}:${Version}"
-Write-Host "           ${WEB_IMAGE}:latest"
+Write-Host "Images pushed to GHCR:" -ForegroundColor Cyan
+Write-Host "  Backend: ${BACKEND_IMAGE}:${Version}" -ForegroundColor White
+Write-Host "           ${BACKEND_IMAGE}:latest" -ForegroundColor White
+Write-Host "  Web:     ${WEB_IMAGE}:${Version}" -ForegroundColor White
+Write-Host "           ${WEB_IMAGE}:latest" -ForegroundColor White
 Write-Host ""
-Write-Host "To deploy on your Lightsail server:"
-Write-Host "  1. Update docker-compose.yml to use these image tags"
-Write-Host "  2. Run: docker compose pull"
-Write-Host "  3. Run: docker compose up -d"
+Write-Host "To deploy on your Lightsail server:" -ForegroundColor Cyan
+Write-Host "  1. Update docker-compose.yml to use these image tags" -ForegroundColor White
+Write-Host "  2. Run: docker compose pull" -ForegroundColor White
+Write-Host "  3. Run: docker compose up -d" -ForegroundColor White
 Write-Host ""
 Write-Host "Done!" -ForegroundColor Green
 
