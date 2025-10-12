@@ -75,7 +75,63 @@
   border: 1px solid #f5c6cb;
 }
 
-/* Solution Box */
+/* Solution Grid Table */
+.solution-grid-container {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  background-color: #fafafa;
+  text-align: left;
+}
+
+.solution-grid {
+  margin-top: 8px;
+  border-collapse: collapse;
+  background-color: #fff;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.solution-grid td {
+  width: 32px;
+  height: 32px;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Thicker borders for 3x3 boxes */
+.solution-grid tr:nth-child(3n) td {
+  border-bottom: 2px solid #333;
+}
+
+.solution-grid td:nth-child(3n) {
+  border-right: 2px solid #333;
+}
+
+.solution-grid tr:last-child td {
+  border-bottom: 1px solid #ccc;
+}
+
+.solution-grid td:last-child {
+  border-right: 1px solid #ccc;
+}
+
+/* Cell styling */
+.solution-grid .empty-cell {
+  background-color: #f9f9f9;
+  color: #999;
+}
+
+.solution-grid .filled-cell {
+  background-color: #fff;
+  color: #000;
+  font-weight: 600;
+}
+
+/* Solution Box (Text Format) */
 .solution-box {
   border: 1px solid #ddd;
   border-radius: 8px;

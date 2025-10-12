@@ -27,8 +27,8 @@ export async function getHealth(): Promise<Healthz> {
 /**
  * Solve a sudoku puzzle
  * 
- * @param request - Solve request containing puzzle and optional difficulty
- * @returns Promise resolving to solve response with solution
+ * @param request - Solve request containing 9x9 grid and optional debug_level
+ * @returns Promise resolving to solve response with solution grid
  * @throws Error if the request fails
  */
 export async function solve(request: SolveRequest): Promise<SolveResponse> {
