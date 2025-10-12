@@ -75,6 +75,12 @@
   border: 1px solid #f5c6cb;
 }
 
+.status-invalid {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
 /* Solution Grid Table */
 .solution-grid-container {
   border: 1px solid #ddd;

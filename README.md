@@ -14,10 +14,13 @@ A comprehensive Python Sudoku solver with advanced solving techniques and OCR ca
 ### Web Application (Beta)
 - **React + TypeScript Frontend**: Modern single-page application with responsive design
 - **FastAPI Backend**: RESTful API with automatic validation and documentation
-- **Real-time Solving**: Submit puzzles and receive solutions via API
+- **Integrated Solving**: Fully integrated with core SudokuSolver engine
+- **Grid-Based API**: Structured 9×9 grid input/output with type validation
+- **Visual Grid Display**: Shows original puzzle and solution as interactive tables with 3×3 box boundaries
+- **Debug Levels**: Four debug levels (Silent, Informational, Basic, Detailed) with captured solver logs
+- **Sample Puzzles**: Quick-load buttons for Empty, Easy, Medium, and Hard example puzzles
+- **Smart Error Handling**: Distinguishes between invalid input, network errors, and solver failures
 - **Docker Deployment**: Containerized architecture with Nginx reverse proxy
-- **Result Display**: Shows success/fail status, solution, and detailed messages
-- **Note**: Frontend UI currently echoes puzzle input; integration with core SudokuSolver logic is in progress
 
 ### OCR Capabilities (Optional)
 - **Image Preprocessing**: Converts images to binary format with adaptive thresholding and morphological operations
@@ -381,18 +384,23 @@ See [web/README-deploy-images.md](web/README-deploy-images.md) for complete depl
 - `GET /api/healthz` - Returns `{"status": "ok"}`
 
 **Solve Puzzle:**
-- `POST /api/solve` - Accepts `{"puzzle": "string"}`, returns `{"solution": "string", "success": boolean, "message": "string"}`
-- **Note**: Currently echoes input; integration with core SudokuSolver logic in progress
+- `POST /api/solve` - Accepts `{"grid": number[][], "debug_level": number}`, returns `{"solution": number[][] | null, "success": boolean, "message": "string"}`
+- **Fully integrated** with core SudokuSolver engine
+- Captures solver output based on debug level
+- Returns partial progress even on failure
 
 ### Features
 
-- ✅ **Modern UI**: React + TypeScript single-page application
-- ✅ **Type-Safe API**: FastAPI with Pydantic validation
-- ✅ **Result Display**: Shows success/fail status, solution, and detailed messages with all three backend response fields
-- ✅ **Error Handling**: Network errors and validation errors properly displayed
+- ✅ **Modern UI**: React + TypeScript single-page application with grid visualization
+- ✅ **Type-Safe API**: FastAPI with Pydantic validation for 9×9 grids
+- ✅ **Grid Display**: Visual 9×9 tables with 3×3 box boundaries for original and solution
+- ✅ **Sample Puzzles**: One-click loading of Empty, Easy, Medium, and Hard example puzzles
+- ✅ **Debug Levels**: Four levels (0-3) to control solver output verbosity
+- ✅ **Smart Error Handling**: Distinguishes invalid input, network errors, and solver failures
+- ✅ **Result Display**: Shows original puzzle, solution grid, and captured solver logs
 - ✅ **Accessibility**: ARIA labels and live regions for screen readers
 - ✅ **Containerized**: Docker-based deployment with Nginx reverse proxy
-- 🚧 **In Progress**: Integration with core SudokuSolver backend logic
+- ✅ **Fully Integrated**: Backend now uses actual SudokuSolver engine with log capture
 
 ### Documentation
 
