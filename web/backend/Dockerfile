@@ -25,6 +25,9 @@ COPY src/ /app/src/
 # Copy backend application code
 COPY web/backend/ /app/
 
+# Set PYTHONPATH so src modules can import each other
+ENV PYTHONPATH=/app/src
+
 # Expose port 8000 for FastAPI application
 EXPOSE 8000
 
