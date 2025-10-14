@@ -81,51 +81,96 @@
   border: 1px solid #ffeaa7;
 }
 
-/* Solution Grid Table */
-.solution-grid-container {
-  border: 1px solid #ddd;
-  border-radius: 8px;
+/* Card wrapper used by both editable and solution grids */
+.grid-card {
+  display: inline-block;
   padding: 12px;
-  background-color: #fafafa;
-  text-align: left;
+  border-radius: 12px;
+  background: #f7f7f9;               /* slightly darker than page */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
-.solution-grid {
-  margin-top: 8px;
+/* Base grid used by editable & solution tables */
+.sudoku-grid {
   border-collapse: collapse;
-  background-color: #fff;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 8px 0;
+  table-layout: fixed;
 }
 
-.solution-grid td {
-  width: 32px;
-  height: 32px;
+.sudoku-grid td {
+  width: 44px;
+  height: 44px;
   text-align: center;
-  vertical-align: middle;
-  border: 1px solid #ccc;
-  font-size: 16px;
+  border: 1px solid #d9d9de;         /* light inner lines */
+  background: #fff;
+  padding: 0;
+}
+
+/* Remove outer frame borders (top/left/right/bottom) so it feels inset */
+.sudoku-grid tr:first-child td {
+  border-top: none;
+}
+
+.sudoku-grid tr td:first-child {
+  border-left: none;
+}
+
+.sudoku-grid tr:last-child td {
+  border-bottom: none;
+}
+
+.sudoku-grid tr td:last-child {
+  border-right: none;
+}
+
+/* Thicker borders between 3x3 subgrids (but not on the outer edge) */
+.sudoku-grid tr:nth-child(3n) td {
+  border-bottom-width: 2px;
+  border-bottom-color: #333;
+}
+
+.sudoku-grid tr td:nth-child(3n) {
+  border-right-width: 2px;
+  border-right-color: #333;
+}
+
+/* Undo the outermost thicker edge so outer frame stays "open" */
+.sudoku-grid tr:last-child td {
+  border-bottom: none;
+}
+
+.sudoku-grid tr td:last-child {
+  border-right: none;
+}
+
+/* Inputs inside editable grid cells */
+.editable-grid .cell-input {
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', 'Consolas', 
+               'Liberation Mono', monospace;
+  font-size: 18px;
   font-weight: 500;
+  border: none;
+  outline: none;
+  background: transparent;           /* inherit cell background */
+  padding: 0;
+  margin: 0;
 }
 
-/* Thicker borders for 3x3 boxes */
-.solution-grid tr:nth-child(3n) td {
-  border-bottom: 2px solid #333;
+.editable-grid .cell-input:focus {
+  background-color: #e3f2fd;
+  font-weight: 600;
 }
 
-.solution-grid td:nth-child(3n) {
-  border-right: 2px solid #333;
+.editable-grid .cell-input:disabled {
+  background: transparent;
+  color: #999;
+  cursor: not-allowed;
 }
 
-.solution-grid tr:last-child td {
-  border-bottom: 1px solid #ccc;
-}
-
-.solution-grid td:last-child {
-  border-right: 1px solid #ccc;
-}
-
-/* Cell styling */
+/* Cell styling for Solution Grid */
 .solution-grid .empty-cell {
   background-color: #f9f9f9;
   color: #999;

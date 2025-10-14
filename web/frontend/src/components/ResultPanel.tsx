@@ -19,22 +19,24 @@ interface ResultPanelProps {
  */
 function renderGridTable(grid: Grid): JSX.Element {
   return (
-    <table className="solution-grid">
-      <tbody>
-        {grid.map((row, rowIndex) => (
-          <tr key={rowIndex}>
-            {row.map((cell, colIndex) => (
-              <td 
-                key={colIndex}
-                className={cell === 0 ? 'empty-cell' : 'filled-cell'}
-              >
-                {cell === 0 ? '' : cell}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="grid-card">
+      <table className="sudoku-grid solution-grid">
+        <tbody>
+          {grid.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {row.map((cell, colIndex) => (
+                <td 
+                  key={colIndex}
+                  className={cell === 0 ? 'empty-cell' : 'filled-cell'}
+                >
+                  {cell === 0 ? '' : cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -92,14 +94,14 @@ export default function ResultPanel({ result, validationError, networkError, ori
 
         {/* SHOW BOTH GRIDS - User can see what couldn't be solved */}
         {originalGrid && (
-          <div className="solution-grid-container" aria-label="Original puzzle grid">
+          <div aria-label="Original puzzle grid">
             <div className="solution-label">Original Puzzle:</div>
             {renderGridTable(originalGrid)}
           </div>
         )}
 
         {result.solution && (
-          <div className="solution-grid-container" aria-label="Attempted solution grid">
+          <div aria-label="Attempted solution grid">
             <div className="solution-label">Attempted Solution:</div>
             {renderGridTable(result.solution)}
           </div>
@@ -127,7 +129,7 @@ export default function ResultPanel({ result, validationError, networkError, ori
 
         {/* Original puzzle grid */}
         {originalGrid && (
-          <div className="solution-grid-container" aria-label="Original puzzle grid">
+          <div aria-label="Original puzzle grid">
             <div className="solution-label">Original Puzzle:</div>
             {renderGridTable(originalGrid)}
           </div>
@@ -135,7 +137,7 @@ export default function ResultPanel({ result, validationError, networkError, ori
 
         {/* Solution grid */}
         {result.solution && (
-          <div className="solution-grid-container" aria-label="Solved puzzle grid">
+          <div aria-label="Solved puzzle grid">
             <div className="solution-label">Solution Grid:</div>
             {renderGridTable(result.solution)}
           </div>
