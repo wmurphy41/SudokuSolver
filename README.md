@@ -11,10 +11,17 @@ A comprehensive Python Sudoku solver with advanced solving techniques and OCR ca
 - **Naked Groups**: Handle pairs, triples, and quads of candidates
 - **Hidden Groups**: Advanced group-based solving techniques
 
+### Command-Line Interface
+- **CLI Solver**: New command-line interface for solving puzzles from JSON files
+- **Interactive Mode**: Python shell integration for programmatic puzzle solving
+- **Batch Processing**: Silent mode for solving multiple puzzles efficiently
+- **Documentation**: Comprehensive command-line usage guide
+
 ### Web Application (Beta)
 - **React + TypeScript Frontend**: Modern single-page application with responsive design
 - **FastAPI Backend**: RESTful API with automatic validation and documentation
 - **Integrated Solving**: Fully integrated with core SudokuSolver engine
+- **Mode-Based UI**: Edit and Result modes with seamless state management
 - **Grid-Based API**: Structured 9×9 grid input/output with type validation
 - **Visual Grid Display**: Shows original puzzle and solution as interactive tables with 3×3 box boundaries
 - **Debug Levels**: Four debug levels (Silent, Informational, Basic, Detailed) with captured solver logs
@@ -45,6 +52,7 @@ SudokuSolver/
 ├── src/
 │   ├── sudoku_models.py       # Data models, enums, exceptions
 │   ├── sudoku_solver.py       # Core solving engine
+│   ├── cli_solver.py          # CLI for solving puzzles from JSON
 │   └── sudoku_ocr/            # OCR processing modules
 │       ├── __init__.py        # Package initialization
 │       ├── cli.py            # Command-line interface
@@ -87,8 +95,9 @@ SudokuSolver/
 │   ├── end_to_end_example.py # Complete pipeline demo
 │   └── sample_puzzles.py     # Test puzzles
 ├── docs/
-│   ├── IMPROVEMENTS.md      # Detailed improvement documentation
-│   └── application_flow.md  # Web app architecture documentation
+│   ├── IMPROVEMENTS.md       # Detailed improvement documentation
+│   ├── application_flow.md   # Web app architecture documentation
+│   └── COMMAND_LINE_USAGE.md # Command-line usage guide
 ├── pyproject.toml            # Unified project configuration
 └── README.md                 # This file
 ```
@@ -136,6 +145,25 @@ pip install sudoku-solver[all]
    - **Linux**: `sudo apt-get install tesseract-ocr`
 
 ## Quick Start
+
+### Command-Line Solving
+
+**Solve from JSON file:**
+```bash
+# Navigate to project root
+cd SudokuSolver
+
+# Solve a puzzle from JSON file
+python src/cli_solver.py --file examples/examples_data/NYT-EASY-2025-09-27_puzzle.json
+
+# With detailed debug output
+python src/cli_solver.py --file puzzle.json --debug 2
+
+# Save solution to file
+python src/cli_solver.py --file puzzle.json --output solution.json
+```
+
+**For more CLI usage examples, see [docs/COMMAND_LINE_USAGE.md](docs/COMMAND_LINE_USAGE.md)**
 
 ### Basic Sudoku Solving
 
@@ -561,6 +589,10 @@ This project is [MIT](https://spdx.org/licenses/MIT.html) licensed.
 ## Changelog
 
 ### Recent Improvements (Latest)
+- **Command-Line Interface**: New CLI solver (`src/cli_solver.py`) for solving puzzles from JSON files with support for debug levels, output saving, and step-by-step solving
+- **Command-Line Documentation**: Comprehensive usage guide in `docs/COMMAND_LINE_USAGE.md`
+- **Web UI Enhancement**: Mode-based UI in SolveForm with Edit and Result modes for better user experience
+- **Focus Management**: Auto-focus on first cell when returning to edit mode
 - **Project Organization**: Reorganized test and example data files into dedicated subdirectories
   - Tests now use `tests/test_data/` for all test data files (images, JSON, expected outputs)
   - Examples now use `examples/examples_data/` for all data files (images, JSON puzzles)
