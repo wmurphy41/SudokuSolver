@@ -6,11 +6,15 @@ It includes health check and solve endpoints integrated with the SudokuSolver en
 """
 
 import io
+import json
+import os
 import sys
+import uuid
 from contextlib import redirect_stdout
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, field_validator
 from typing import Dict, List, Optional
+import redis
 
 # Import the SudokuSolver engine
 # NOTE: If running in Docker, PYTHONPATH may need to be set to /app
@@ -31,6 +35,9 @@ except ImportError:
         sys.path.insert(0, str(project_root))
         from src.sudoku_solver import SudokuSolver
 
+# Import step solver (stub for now)
+from step_solver import apply_one_step
+
 # Initialize FastAPI application
 app = FastAPI(
     title="SudokuSolver API",
@@ -41,6 +48,13 @@ app = FastAPI(
 # Type aliases for 9x9 Sudoku grid
 Row = List[int]
 Grid = List[Row]
+
+# Redis client configuration
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+def get_redis() -> redis.Redis:
+    """Get a Redis client instance."""
+    return redis.from_url(REDIS_URL, decode_responses=True)
 
 class SolveRequest(BaseModel):
     """Model for sudoku solve requests with structured 9x9 grid."""
@@ -73,6 +87,46 @@ class SolveResponse(BaseModel):
     solution: Optional[Grid]  # None if invalid/unsolved
     success: bool
     message: str
+
+# Session models for step-wise solving
+class StepSessionCreate(BaseModel):
+    """Model for creating a step-wise solving session."""
+    grid: Grid
+    debug_level: int = 0
+
+    @field_validator('grid')
+    @classmethod
+    def validate_grid_size(cls, grid: Grid) -> Grid:
+        """Validate grid is exactly 9x9."""
+        if len(grid) != 9:
+            raise ValueError("grid must have exactly 9 rows")
+        for i, row in enumerate(grid):
+            if len(row) != 9:
+                raise ValueError(f"row {i} must have exactly 9 columns")
+        return grid
+
+    @field_validator('grid')
+    @classmethod
+    def validate_digits(cls, grid: Grid) -> Grid:
+        """Validate all grid values are integers 0-9."""
+        for i, row in enumerate(grid):
+            for j, val in enumerate(row):
+                if not isinstance(val, int) or not (0 <= val <= 9):
+                    raise ValueError(f"grid[{i}][{j}] must be an integer 0..9, got {val}")
+        return grid
+
+class StepInfo(BaseModel):
+    """Model for step information."""
+    rule: Optional[str] = None
+    row: Optional[int] = None
+    col: Optional[int] = None
+    value: Optional[int] = None
+
+class StepResponse(BaseModel):
+    """Model for step response."""
+    grid: Grid
+    step: StepInfo
+    done: bool
 
 
 def _to_int_grid(solver: SudokuSolver) -> Grid:
@@ -152,6 +206,72 @@ async def solve_sudoku(request: SolveRequest) -> SolveResponse:
             success=False, 
             message=message.strip()
         )
+
+# Session endpoints for step-wise solving
+@app.post("/api/sessions")
+async def create_session(payload: StepSessionCreate) -> Dict[str, str]:
+    """
+    Create a new step-wise solving session.
+    
+    Args:
+        payload: StepSessionCreate containing 9x9 grid and debug level
+        
+    Returns:
+        Dict containing session_id
+    """
+    r = get_redis()
+    session_id = uuid.uuid4().hex
+    data = {
+        "grid": payload.grid,
+        "debug_level": payload.debug_level,
+    }
+    r.set(f"sudoku:session:{session_id}", json.dumps(data))
+    return {"session_id": session_id}
+
+@app.post("/api/sessions/{session_id}/step", response_model=StepResponse)
+async def step_session(session_id: str) -> StepResponse:
+    """
+    Apply one step to a solving session.
+    
+    Args:
+        session_id: Session identifier
+        
+    Returns:
+        StepResponse with updated grid, step info, and done status
+    """
+    r = get_redis()
+    raw = r.get(f"sudoku:session:{session_id}")
+    if raw is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    data = json.loads(raw)
+    grid: Grid = data["grid"]
+
+    # Apply a single step (stubbed for now)
+    new_grid, step_info_dict, done = apply_one_step(grid)
+
+    # Persist updated grid if not done
+    data["grid"] = new_grid
+    r.set(f"sudoku:session:{session_id}", json.dumps(data))
+
+    step_info = StepInfo(**step_info_dict)
+    return StepResponse(grid=new_grid, step=step_info, done=done)
+
+@app.delete("/api/sessions/{session_id}")
+async def delete_session(session_id: str) -> Dict[str, bool]:
+    """
+    Delete a solving session.
+    
+    Args:
+        session_id: Session identifier
+        
+    Returns:
+        Dict indicating whether the session was deleted
+    """
+    r = get_redis()
+    key = f"sudoku:session:{session_id}"
+    exists = r.delete(key)
+    return {"deleted": bool(exists)}
 
 if __name__ == "__main__":
     import uvicorn

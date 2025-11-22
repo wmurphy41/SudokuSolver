@@ -10,6 +10,9 @@ uvicorn[standard]==0.32.0
 # Data validation and serialization using Python type annotations
 pydantic==2.10.0
 
+# Redis client for session storage
+redis==5.2.0
+
 # Additional dependencies that may be needed for production
 # python-multipart==0.0.6  # For handling form data (uncomment if needed)
 # python-jose[cryptography]==3.3.0  # For JWT tokens (uncomment if needed)

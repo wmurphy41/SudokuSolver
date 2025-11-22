@@ -237,3 +237,26 @@
   white-space: pre-wrap;
   word-wrap: break-word;
 }
+
+/* ============================================================================
+   Step-wise Solving Styles
+   ============================================================================ */
+
+.step-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.step-info {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.error-text {
+  color: #b00020;
+  margin-top: 4px;
+}

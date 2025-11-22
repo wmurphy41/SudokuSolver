@@ -6,7 +6,7 @@
  */
 
 import { API_BASE } from '../config';
-import type { SolveRequest, SolveResponse, Healthz } from '../types/api';
+import type { SolveRequest, SolveResponse, Healthz, Grid, StepResponse, SessionCreateResponse } from '../types/api';
 
 /**
  * Check backend health status
@@ -45,5 +45,59 @@ export async function solve(request: SolveRequest): Promise<SolveResponse> {
   }
   
   return response.json();
+}
+
+/**
+ * Create a new step-wise solving session
+ * 
+ * @param grid - 9x9 grid to start solving
+ * @param debug_level - Optional debug level (default: 0)
+ * @returns Promise resolving to session creation response with session_id
+ * @throws Error if the request fails
+ */
+export async function createSession(grid: Grid, debug_level = 0): Promise<SessionCreateResponse> {
+  const res = await fetch(`${API_BASE}/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grid, debug_level }),
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return res.json();
+}
+
+/**
+ * Apply one step to a solving session
+ * 
+ * @param sessionId - Session identifier
+ * @returns Promise resolving to step response with updated grid and step info
+ * @throws Error if the request fails
+ */
+export async function stepSession(sessionId: string): Promise<StepResponse> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/step`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return res.json();
+}
+
+/**
+ * Delete a solving session
+ * 
+ * @param sessionId - Session identifier
+ * @returns Promise resolving to deletion status
+ * @throws Error if the request fails
+ */
+export async function deleteSession(sessionId: string): Promise<{ deleted: boolean }> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return res.json();
 }
 

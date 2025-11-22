@@ -62,12 +62,12 @@ Browser → http://localhost:5173/api/healthz (dev mode)
 
 ---
 
-## 3️⃣ Solve Puzzle Flow
+## 3️⃣ Solve Puzzle Flow (Full Solve)
 
 **File:** `web/frontend/src/components/SolveForm.tsx`
 
 ```
-User enters puzzle text in textarea
+User enters puzzle in editable grid
     ↓
 User clicks "Solve Puzzle" button
     ↓
@@ -77,28 +77,118 @@ Validates puzzle input (non-empty)
     ↓
 Sets loading state (button shows "Solving...")
     ↓
-Calls solve({ puzzle }) from api service
+Calls solve({ grid, debug_level }) from api service
     ↓
 Frontend: POST /api/solve
-    Body: {"puzzle": "...user input..."}
+    Body: {"grid": number[][], "debug_level": number}
     ↓
 [Vite Proxy (dev) or Nginx (prod)]
     ↓
 Backend: POST /api/solve
     ↓
-FastAPI processes request
+FastAPI processes request with SudokuSolver
     ↓
 Returns: {
-  "solution": "...",
-  "success": true,
-  "message": "Puzzle received successfully"
+  "solution": number[][] | null,
+  "success": boolean,
+  "message": "string"
 }
     ↓
 Frontend receives response
     ↓
 Updates state with solution/message
     ↓
-UI displays result in green box
+UI displays result in ResultPanel
+```
+
+---
+
+## 3️⃣b Stepwise Solving Flow (Experimental)
+
+**File:** `web/frontend/src/components/SolveForm.tsx`
+
+**Create Session:**
+```
+User enters puzzle in editable grid
+    ↓
+User clicks "Start Step Session" button
+    ↓
+handleStartStepSession() function executes
+    ↓
+Calls createSession({ grid, debug_level }) from api service
+    ↓
+Frontend: POST /api/sessions
+    Body: {"grid": number[][], "debug_level": number}
+    ↓
+[Vite Proxy (dev) or Nginx (prod)]
+    ↓
+Backend: POST /api/sessions
+    ↓
+FastAPI generates session_id (UUID)
+    ↓
+Stores grid state in Redis (key: sudoku:session:{session_id})
+    ↓
+Returns: {"session_id": "string"}
+    ↓
+Frontend stores session_id in state
+    ↓
+UI enables "Next Step" and "End Session" buttons
+```
+
+**Apply Step:**
+```
+User clicks "Next Step" button
+    ↓
+handleNextStep() function executes
+    ↓
+Calls stepSession(sessionId) from api service
+    ↓
+Frontend: POST /api/sessions/{session_id}/step
+    ↓
+[Vite Proxy (dev) or Nginx (prod)]
+    ↓
+Backend: POST /api/sessions/{session_id}/step
+    ↓
+FastAPI retrieves grid from Redis
+    ↓
+Calls apply_one_step(grid) (stub for now)
+    ↓
+Updates grid in Redis with new state
+    ↓
+Returns: {
+  "grid": number[][],
+  "step": {"rule": string, "row": number, "col": number, "value": number},
+  "done": boolean
+}
+    ↓
+Frontend updates grid state with response.grid
+    ↓
+UI displays updated grid and step information
+    ↓
+If done=true, "Next Step" button is disabled
+```
+
+**End Session:**
+```
+User clicks "End Session" button
+    ↓
+handleEndSession() function executes
+    ↓
+Calls deleteSession(sessionId) from api service
+    ↓
+Frontend: DELETE /api/sessions/{session_id}
+    ↓
+[Vite Proxy (dev) or Nginx (prod)]
+    ↓
+Backend: DELETE /api/sessions/{session_id}
+    ↓
+FastAPI deletes session from Redis
+    ↓
+Returns: {"deleted": boolean}
+    ↓
+Frontend clears session state
+    ↓
+UI returns to initial state
 ```
 
 ---
@@ -116,7 +206,7 @@ export async function getHealth(): Promise<Healthz> {
   return response.json();
 }
 
-// Solve Function
+// Solve Function (Full Solve)
 export async function solve(request: SolveRequest): Promise<SolveResponse> {
   const response = await fetch(`${API_BASE}/solve`, {
     method: 'POST',
@@ -124,6 +214,30 @@ export async function solve(request: SolveRequest): Promise<SolveResponse> {
     body: JSON.stringify(request),
   });
   return response.json();
+}
+
+// Session Functions (Stepwise Solving)
+export async function createSession(grid: Grid, debug_level = 0): Promise<SessionCreateResponse> {
+  const res = await fetch(`${API_BASE}/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grid, debug_level }),
+  });
+  return res.json();
+}
+
+export async function stepSession(sessionId: string): Promise<StepResponse> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/step`, {
+    method: 'POST',
+  });
+  return res.json();
+}
+
+export async function deleteSession(sessionId: string): Promise<{ deleted: boolean }> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+    method: 'DELETE',
+  });
+  return res.json();
 }
 ```
 
@@ -224,25 +338,78 @@ async def health_check() -> Dict[str, str]:
     return {"status": "ok"}
 ```
 
-### Solve Endpoint
+### Solve Endpoint (Full Solve)
 
 ```python
 @app.post("/api/solve", response_model=SolveResponse)
 async def solve_sudoku(request: SolveRequest) -> SolveResponse:
-    # TODO: Integrate with actual SudokuSolver backend
+    # Integrated with SudokuSolver engine
+    solver = SudokuSolver(request.grid, debug_level=request.debug_level)
+    ok = solver.solve()
+    solution_grid = _to_int_grid(solver)
     return SolveResponse(
-        solution=request.puzzle,  # Echo for now
-        success=True,
-        message="Puzzle received successfully"
+        solution=solution_grid,
+        success=bool(ok),
+        message="Solved" if ok else "Unsolved or invalid"
     )
 ```
 
 **What happens:**
 1. FastAPI receives HTTP request
 2. Pydantic validates request body against `SolveRequest` model
-3. Function processes request (currently just echoes)
-4. Pydantic serializes response using `SolveResponse` model
-5. FastAPI returns JSON response with proper status codes
+3. Creates SudokuSolver instance with grid and debug level
+4. Solves puzzle completely (all steps at once)
+5. Extracts solution grid
+6. Returns SolveResponse with solution, success status, and message
+
+### Session Endpoints (Stepwise Solving)
+
+**Create Session:**
+```python
+@app.post("/api/sessions")
+async def create_session(payload: StepSessionCreate) -> Dict[str, str]:
+    r = get_redis()
+    session_id = uuid.uuid4().hex
+    data = {"grid": payload.grid, "debug_level": payload.debug_level}
+    r.set(f"sudoku:session:{session_id}", json.dumps(data))
+    return {"session_id": session_id}
+```
+
+**Apply Step:**
+```python
+@app.post("/api/sessions/{session_id}/step", response_model=StepResponse)
+async def step_session(session_id: str) -> StepResponse:
+    r = get_redis()
+    raw = r.get(f"sudoku:session:{session_id}")
+    if raw is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    data = json.loads(raw)
+    grid = data["grid"]
+    new_grid, step_info_dict, done = apply_one_step(grid)
+    
+    data["grid"] = new_grid
+    r.set(f"sudoku:session:{session_id}", json.dumps(data))
+    
+    return StepResponse(grid=new_grid, step=StepInfo(**step_info_dict), done=done)
+```
+
+**Delete Session:**
+```python
+@app.delete("/api/sessions/{session_id}")
+async def delete_session(session_id: str) -> Dict[str, bool]:
+    r = get_redis()
+    exists = r.delete(f"sudoku:session:{session_id}")
+    return {"deleted": bool(exists)}
+```
+
+**What happens:**
+1. FastAPI receives HTTP request
+2. Pydantic validates request body/models
+3. Redis client retrieves/updates session data
+4. Step solver applies one solving step (stub currently)
+5. Updated grid state persisted in Redis
+6. FastAPI returns JSON response with updated state
 
 ---
 
@@ -350,8 +517,11 @@ export interface Healthz {
 |-----------|------|---------|
 | FastAPI App | `web/backend/app.py` | Main API application |
 | Health Endpoint | `@app.get("/api/healthz")` | Health check endpoint |
-| Solve Endpoint | `@app.post("/api/solve")` | Puzzle solving endpoint |
-| Pydantic Models | `SolveRequest`, `SolveResponse` | Data validation models |
+| Solve Endpoint | `@app.post("/api/solve")` | Full puzzle solving endpoint |
+| Session Endpoints | `@app.post("/api/sessions")`, `@app.post("/api/sessions/{id}/step")`, `@app.delete("/api/sessions/{id}")` | Stepwise solving endpoints |
+| Step Solver | `web/backend/step_solver.py` | Step-wise solving logic (stub) |
+| Redis Client | `get_redis()` in `app.py` | Session state storage |
+| Pydantic Models | `SolveRequest`, `SolveResponse`, `StepSessionCreate`, `StepInfo`, `StepResponse` | Data validation models |
 
 ### Infrastructure
 
@@ -359,7 +529,8 @@ export interface Healthz {
 |-----------|------|---------|
 | Vite Config | `vite.config.ts` | Dev server proxy configuration |
 | Nginx Config | `web/nginx/nginx.conf` | Production reverse proxy |
-| Docker Compose | `web/docker-compose.yml` | Container orchestration |
+| Docker Compose | `web/docker-compose.yml` | Container orchestration (includes Redis service) |
+| Redis | Docker service | Session state storage backend |
 
 ---
 
@@ -371,21 +542,19 @@ export interface Healthz {
 4. **Abstraction**: API service layer isolates components from HTTP details
 5. **Validation**: Both frontend (TypeScript) and backend (Pydantic) validate data
 6. **Proxy/Routing**: Vite (dev) or Nginx (prod) handles API routing
-7. **Stateless**: Each request is independent (no session state yet)
+7. **Session State**: Redis-backed sessions for stepwise solving (experimental feature)
 
 ---
 
 ## 🚀 Future Integration Points
 
-When integrating the actual SudokuSolver logic, you'll need to:
+1. **Step Solver Integration**: Replace stub in `step_solver.py` with real one-step wrapper around `SudokuSolver`
+2. **Add OCR Endpoint**: For image-based puzzle input
+3. **Session Persistence**: Consider TTL for sessions to auto-cleanup
+4. **Error Handling**: More detailed error responses for session endpoints
+5. **Session History**: Track step-by-step history in Redis for undo/redo functionality
 
-1. **Update Backend**: Replace echo logic in `solve_sudoku()` with actual solver
-2. **No Frontend Changes**: Frontend API contract remains the same
-3. **Add OCR Endpoint**: For image-based puzzle input
-4. **Session Management**: If puzzle history is needed
-5. **Error Handling**: More detailed error responses
-
-The current architecture makes it easy to integrate the actual SudokuSolver logic in the backend without changing the frontend!
+The current architecture supports both full solve and stepwise solving workflows!
 
 ---
 
@@ -397,5 +566,5 @@ The current architecture makes it easy to integrate the actual SudokuSolver logi
 
 ---
 
-**Last Updated:** 2025-10-08
+**Last Updated:** 2025-01-XX (Added Redis-backed stepwise solving support)
 

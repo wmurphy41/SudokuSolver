@@ -27,7 +27,8 @@ A comprehensive Python Sudoku solver with advanced solving techniques and OCR ca
 - **Debug Levels**: Four debug levels (Silent, Informational, Basic, Detailed) with captured solver logs
 - **Sample Puzzles**: Quick-load buttons for Empty, Easy, Medium, and Hard example puzzles
 - **Smart Error Handling**: Distinguishes between invalid input, network errors, and solver failures
-- **Docker Deployment**: Containerized architecture with Nginx reverse proxy
+- **Stepwise Solving (Experimental)**: Redis-backed session-based step-by-step solving with real-time grid updates
+- **Docker Deployment**: Containerized architecture with Nginx reverse proxy and Redis support
 
 ### OCR Capabilities (Optional)
 - **Image Preprocessing**: Converts images to binary format with adaptive thresholding and morphological operations
@@ -411,11 +412,18 @@ See [web/README-deploy-images.md](web/README-deploy-images.md) for complete depl
 **Health Check:**
 - `GET /api/healthz` - Returns `{"status": "ok"}`
 
-**Solve Puzzle:**
+**Solve Puzzle (Full Solve):**
 - `POST /api/solve` - Accepts `{"grid": number[][], "debug_level": number}`, returns `{"solution": number[][] | null, "success": boolean, "message": "string"}`
 - **Fully integrated** with core SudokuSolver engine
 - Captures solver output based on debug level
 - Returns partial progress even on failure
+
+**Session-Based Stepwise Solving (Experimental):**
+- `POST /api/sessions` - Creates a new solving session, accepts `{"grid": number[][], "debug_level": number}`, returns `{"session_id": "string"}`
+- `POST /api/sessions/{session_id}/step` - Applies one solving step, returns `{"grid": number[][], "step": {"rule": string, "row": number, "col": number, "value": number}, "done": boolean}`
+- `DELETE /api/sessions/{session_id}` - Deletes a solving session, returns `{"deleted": boolean}`
+- **Redis-backed** session storage for persistent state between steps
+- Currently uses stub step solver; ready for integration with real step-wise logic
 
 ### Features
 
@@ -429,6 +437,8 @@ See [web/README-deploy-images.md](web/README-deploy-images.md) for complete depl
 - ✅ **Accessibility**: ARIA labels and live regions for screen readers
 - ✅ **Containerized**: Docker-based deployment with Nginx reverse proxy
 - ✅ **Fully Integrated**: Backend now uses actual SudokuSolver engine with log capture
+- ✅ **Stepwise Solving (Experimental)**: Redis-backed sessions for step-by-step puzzle solving
+- ✅ **Session Management**: Create, step through, and delete solving sessions via REST API
 
 ### Documentation
 
@@ -589,6 +599,12 @@ This project is [MIT](https://spdx.org/licenses/MIT.html) licensed.
 ## Changelog
 
 ### Recent Improvements (Latest)
+- **Redis-Backed Stepwise Solving (Experimental)**: New session-based step-by-step solving feature for web application
+  - Session endpoints: `POST /api/sessions`, `POST /api/sessions/{id}/step`, `DELETE /api/sessions/{id}`
+  - Redis-backed session storage for persistent state between steps
+  - Frontend UI with "Start Step Session", "Next Step", and "End Session" buttons
+  - Step information display showing rule, cell, and value for each move
+  - Currently uses stub step solver ready for integration with real step-wise logic
 - **Command-Line Interface**: New CLI solver (`src/cli_solver.py`) for solving puzzles from JSON files with support for debug levels, output saving, and step-by-step solving
 - **Command-Line Documentation**: Comprehensive usage guide in `docs/COMMAND_LINE_USAGE.md`
 - **Web UI Enhancement**: Mode-based UI in SolveForm with Edit and Result modes for better user experience

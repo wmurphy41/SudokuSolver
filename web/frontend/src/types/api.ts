@@ -48,3 +48,40 @@ export interface Healthz {
   status: 'ok';
 }
 
+/**
+ * Step information for step-wise solving
+ * 
+ * @property rule - Name of the rule used to make the step
+ * @property row - Row index (0-based) where value was placed
+ * @property col - Column index (0-based) where value was placed
+ * @property value - Value that was placed in the cell
+ */
+export interface StepInfo {
+  rule?: string | null;
+  row?: number | null;
+  col?: number | null;
+  value?: number | null;
+}
+
+/**
+ * Response from step endpoint
+ * 
+ * @property grid - Updated 9x9 grid after applying one step
+ * @property step - Information about the step that was applied
+ * @property done - Whether solving is complete (no more steps available)
+ */
+export interface StepResponse {
+  grid: Grid;
+  step: StepInfo;
+  done: boolean;
+}
+
+/**
+ * Response from session creation endpoint
+ * 
+ * @property session_id - Unique identifier for the session
+ */
+export interface SessionCreateResponse {
+  session_id: string;
+}
+
