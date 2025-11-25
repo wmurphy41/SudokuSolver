@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { solve, createSession, stepSession, deleteSession } from '../services/api';
-import type { SolveResponse, Grid, StepInfo } from '../types/api';
+import { solve } from '../services/api';
+import type { SolveResponse, Grid } from '../types/api';
 import ResultPanel from './ResultPanel';
 import EditableGrid from './EditableGrid';
 
@@ -12,6 +12,7 @@ import EditableGrid from './EditableGrid';
  */
 
 type Mode = 'edit' | 'result';
+type SolveMode = 'full' | 'step';
 
 // Sample puzzles for testing
 const SAMPLE_PUZZLES: Record<string, Grid> = {
@@ -32,12 +33,7 @@ export default function SolveForm() {
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [originalGrid, setOriginalGrid] = useState<Grid | null>(null);
   const [mode, setMode] = useState<Mode>('edit');
-  
-  // Session state for step-wise solving
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [stepInfo, setStepInfo] = useState<StepInfo | null>(null);
-  const [stepDone, setStepDone] = useState<boolean>(false);
-  const [stepError, setStepError] = useState<string | null>(null);
+  const [solveMode, setSolveMode] = useState<SolveMode>('full');
 
   /**
    * Load a sample puzzle or clear the grid
@@ -71,6 +67,18 @@ export default function SolveForm() {
       return;
     }
 
+    // Check solve mode
+    if (solveMode === 'step') {
+      // Step-wise solving not yet implemented via UI
+      setValidationError('function not yet implemented');
+      setNetworkError(null);
+      setResult(null);
+      setOriginalGrid(null);
+      setMode('result');
+      return;
+    }
+
+    // Full solve mode
     setLoading(true);
 
     try {
@@ -106,78 +114,13 @@ export default function SolveForm() {
     setOriginalGrid(null);
     setLoading(false);
     setMode('edit');
-    
-    // Clear session state
-    setSessionId(null);
-    setStepInfo(null);
-    setStepDone(false);
-    setStepError(null);
+    setSolveMode('full'); // reset to Full Solve
     
     // Focus first cell after state updates
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLInputElement>('[aria-label="r1 c1 entry"]');
       el?.focus();
     });
-  };
-
-  // Session handlers
-  const handleStartStepSession = async () => {
-    // Clear all error states
-    setStepError(null);
-    setStepInfo(null);
-    setStepDone(false);
-    
-    // Check if grid has any non-zero values
-    const hasValues = grid.some(row => row.some(cell => cell !== 0));
-    if (!hasValues) {
-      setStepError('Please enter a puzzle (grid is empty)');
-      return;
-    }
-
-    try {
-      const response = await createSession(grid, debugLevel);
-      setSessionId(response.session_id);
-      setStepInfo(null);
-      setStepDone(false);
-      setStepError(null);
-    } catch (err) {
-      setStepError(err instanceof Error ? err.message : 'Failed to create session');
-      setSessionId(null);
-    }
-  };
-
-  const handleNextStep = async () => {
-    if (!sessionId) return;
-    
-    setStepError(null);
-    setLoading(true);
-
-    try {
-      const response = await stepSession(sessionId);
-      setGrid(response.grid);
-      setStepInfo(response.step);
-      setStepDone(response.done);
-    } catch (err) {
-      setStepError(err instanceof Error ? err.message : 'Failed to apply step');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEndSession = async () => {
-    if (!sessionId) return;
-    
-    try {
-      await deleteSession(sessionId);
-    } catch (err) {
-      // Log error but continue with cleanup
-      console.error('Failed to delete session:', err);
-    } finally {
-      setSessionId(null);
-      setStepInfo(null);
-      setStepDone(false);
-      setStepError(null);
-    }
   };
 
   // Styles
@@ -423,6 +366,38 @@ export default function SolveForm() {
             </div>
           </div>
 
+          <div style={formGroupStyle}>
+            <label style={labelStyle}>
+              Solve Mode
+            </label>
+            <div style={radioGroupStyle}>
+              <label style={radioLabelStyle}>
+                <input
+                  type="radio"
+                  name="solveMode"
+                  value="full"
+                  checked={solveMode === 'full'}
+                  onChange={() => setSolveMode('full')}
+                  disabled={loading}
+                  style={radioInputStyle}
+                />
+                <span>Full Solve</span>
+              </label>
+              <label style={radioLabelStyle}>
+                <input
+                  type="radio"
+                  name="solveMode"
+                  value="step"
+                  checked={solveMode === 'step'}
+                  onChange={() => setSolveMode('step')}
+                  disabled={loading}
+                  style={radioInputStyle}
+                />
+                <span>Step Solve</span>
+              </label>
+            </div>
+          </div>
+
           <button
             type="submit"
             style={buttonStyle}
@@ -440,72 +415,6 @@ export default function SolveForm() {
           >
             {loading ? 'Solving...' : 'Solve Puzzle'}
           </button>
-
-          {/* Step-wise solving controls (experimental) */}
-          <div style={{ marginTop: '16px', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-            <div style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 'bold', color: '#666' }}>
-              Step-by-Step Solving (Experimental)
-            </div>
-            <div className="step-controls">
-              <button
-                type="button"
-                style={{
-                  ...sampleButtonStyle,
-                  backgroundColor: sessionId ? '#6c757d' : '#007bff',
-                  color: 'white',
-                  cursor: sessionId || loading ? 'not-allowed' : 'pointer',
-                }}
-                onClick={handleStartStepSession}
-                disabled={!!sessionId || loading}
-              >
-                Start Step Session
-              </button>
-              <button
-                type="button"
-                style={{
-                  ...sampleButtonStyle,
-                  backgroundColor: !sessionId || stepDone ? '#6c757d' : '#28a745',
-                  color: 'white',
-                  cursor: !sessionId || stepDone || loading ? 'not-allowed' : 'pointer',
-                }}
-                onClick={handleNextStep}
-                disabled={!sessionId || stepDone || loading}
-              >
-                Next Step
-              </button>
-              <button
-                type="button"
-                style={{
-                  ...sampleButtonStyle,
-                  backgroundColor: !sessionId ? '#6c757d' : '#dc3545',
-                  color: 'white',
-                  cursor: !sessionId ? 'not-allowed' : 'pointer',
-                }}
-                onClick={handleEndSession}
-                disabled={!sessionId}
-              >
-                End Session
-              </button>
-            </div>
-            {sessionId && (
-              <div className="step-info">
-                <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#666' }}>
-                  Session: <code style={{ fontSize: '0.75rem' }}>{sessionId.substring(0, 8)}...</code>
-                </div>
-                {stepInfo && (
-                  <div style={{ marginTop: '8px', fontSize: '0.9rem', color: '#444' }}>
-                    <div>Rule: {stepInfo.rule ?? '(none)'}</div>
-                    <div>Cell: {stepInfo.row != null && stepInfo.col != null
-                      ? `(${stepInfo.row + 1}, ${stepInfo.col + 1})`
-                      : '(n/a)'}</div>
-                    <div>Value: {stepInfo.value ?? '(n/a)'}</div>
-                  </div>
-                )}
-                {stepDone && <div style={{ marginTop: '8px', color: '#28a745', fontWeight: 'bold' }}>Done: no more steps.</div>}
-                {stepError && <div className="error-text">{stepError}</div>}
-              </div>
-            )}
-          </div>
         </form>
       )}
 
