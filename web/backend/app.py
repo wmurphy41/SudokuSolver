@@ -241,9 +241,15 @@ async def create_session(payload: StepSessionCreate) -> Dict[str, str]:
     
     try:
         session_id = uuid.uuid4().hex
+        
+        # Create initial solver to get state with candidates initialized
+        solver = SudokuSolver(payload.grid, debug_level=payload.debug_level)
+        solver_state = solver.to_dict()
+        
         data = {
             "grid": payload.grid,
             "debug_level": payload.debug_level,
+            "solver_state": solver_state,
         }
         r.set(f"sudoku:session:{session_id}", json.dumps(data))
         return {"session_id": session_id}
@@ -282,12 +288,17 @@ async def step_session(session_id: str) -> StepResponse:
     data = json.loads(raw)
     grid: Grid = data["grid"]
     debug_level: int = int(data.get("debug_level", 0))
+    solver_state = data.get("solver_state")  # May be None for old sessions
 
-    # New apply_one_step signature: (grid, success, message)
-    new_grid, success, message = apply_one_step(grid, debug_level)
+    # New apply_one_step signature: (grid, success, message, solver_state)
+    # Pass solver_state if available, otherwise use grid (backward compatible)
+    new_grid, success, message, updated_solver_state = apply_one_step(
+        grid, debug_level, solver_state
+    )
 
-    # Persist updated grid back into the session
+    # Persist updated grid and solver state back into the session
     data["grid"] = new_grid
+    data["solver_state"] = updated_solver_state
     r.set(f"sudoku:session:{session_id}", json.dumps(data))
 
     # For step mode, always return the updated grid as the "solution"

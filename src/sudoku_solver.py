@@ -119,6 +119,65 @@ class SudokuSolver:
         if level <= self.debug_level:
             print(message)
     
+    def to_dict(self) -> dict:
+        """
+        Serialize the solver state to a dictionary.
+        
+        Returns:
+            Dictionary containing grid (with values and candidates) and debug_level
+        """
+        grid_data = []
+        for row in self.grid:
+            row_data = []
+            for cell in row:
+                cell_data = {
+                    "value": cell.value,
+                    "candidates": sorted(cell.candidates) if cell.candidates else []
+                }
+                row_data.append(cell_data)
+            grid_data.append(row_data)
+        
+        return {
+            "grid": grid_data,
+            "debug_level": self.debug_level
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> 'SudokuSolver':
+        """
+        Restore a SudokuSolver instance from a serialized dictionary.
+        
+        Args:
+            data: Dictionary containing grid (with values and candidates) and debug_level
+            
+        Returns:
+            Restored SudokuSolver instance
+        """
+        debug_level = data.get("debug_level", 0)
+        grid_data = data["grid"]
+        
+        # Create a solver instance (we'll bypass normal initialization)
+        solver = cls.__new__(cls)
+        solver.debug_level = debug_level
+        solver.metrics = SolvingMetrics()
+        solver.grid = []
+        
+        # Restore grid with values and candidates
+        for row_idx, row_data in enumerate(grid_data):
+            grid_row = []
+            for col_idx, cell_data in enumerate(row_data):
+                value = cell_data["value"]
+                candidates = set(cell_data.get("candidates", []))
+                
+                # Create cell with value
+                cell = SudokuCell(value, row_idx, col_idx)
+                # Restore candidates
+                cell.candidates = candidates
+                grid_row.append(cell)
+            solver.grid.append(grid_row)
+        
+        return solver
+    
     def count_empty_cells(self) -> int:
         """Count the number of empty cells remaining."""
         return sum(1 for cell in self._iterate_all_cells() if cell.is_empty())
