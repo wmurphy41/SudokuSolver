@@ -231,13 +231,13 @@ async def create_session(payload: StepSessionCreate) -> Dict[str, str]:
 @app.post("/api/sessions/{session_id}/step", response_model=StepResponse)
 async def step_session(session_id: str) -> StepResponse:
     """
-    Apply one step to a solving session.
+    Apply a single solving step to a session's grid.
     
     Args:
         session_id: Session identifier
         
     Returns:
-        StepResponse with updated grid, step info, and done status
+        StepResponse with updated grid, step info, and completion flag
     """
     r = get_redis()
     raw = r.get(f"sudoku:session:{session_id}")
@@ -247,10 +247,10 @@ async def step_session(session_id: str) -> StepResponse:
     data = json.loads(raw)
     grid: Grid = data["grid"]
 
-    # Apply a single step (stubbed for now)
+    # For Phase 1, use the stubbed apply_one_step implementation
     new_grid, step_info_dict, done = apply_one_step(grid)
 
-    # Persist updated grid if not done
+    # Persist updated grid
     data["grid"] = new_grid
     r.set(f"sudoku:session:{session_id}", json.dumps(data))
 
@@ -260,7 +260,7 @@ async def step_session(session_id: str) -> StepResponse:
 @app.delete("/api/sessions/{session_id}")
 async def delete_session(session_id: str) -> Dict[str, bool]:
     """
-    Delete a solving session.
+    Delete a step-wise solving session.
     
     Args:
         session_id: Session identifier

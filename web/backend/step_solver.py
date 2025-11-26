@@ -15,7 +15,11 @@ def apply_one_step(grid: Grid) -> Tuple[Grid, Dict[str, Any], bool]:
     TEMPORARY stub for step-wise solving.
     - Finds the first cell with 0 and sets it to 1.
     - If no zeros remain, marks done = True.
-    Returns: (new_grid, step_info, done)
+    
+    Returns:
+        new_grid: updated grid after the step
+        step_info: dict with keys rule, row, col, value
+        done: True if there are no more zeros in the grid
     """
     new_grid = [row[:] for row in grid]
     step_info: Dict[str, Any] = {"rule": None, "row": None, "col": None, "value": None}
