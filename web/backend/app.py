@@ -219,14 +219,49 @@ async def create_session(payload: StepSessionCreate) -> Dict[str, str]:
     Returns:
         Dict containing session_id
     """
-    r = get_redis()
-    session_id = uuid.uuid4().hex
-    data = {
-        "grid": payload.grid,
-        "debug_level": payload.debug_level,
-    }
-    r.set(f"sudoku:session:{session_id}", json.dumps(data))
-    return {"session_id": session_id}
+    try:
+        r = get_redis()
+        # Test connection before proceeding
+        r.ping()
+    except redis.ConnectionError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Redis connection failed: {str(e)}. Please ensure Redis is running."
+        )
+    except redis.TimeoutError as e:
+        raise HTTPException(
+            status_code=504,
+            detail=f"Redis connection timeout: {str(e)}. Redis may be slow or unreachable."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to connect to Redis: {type(e).__name__}: {str(e)}"
+        )
+    
+    try:
+        session_id = uuid.uuid4().hex
+        data = {
+            "grid": payload.grid,
+            "debug_level": payload.debug_level,
+        }
+        r.set(f"sudoku:session:{session_id}", json.dumps(data))
+        return {"session_id": session_id}
+    except redis.RedisError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Redis operation failed: {str(e)}"
+        )
+    except json.JSONEncodeError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to serialize session data: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create session: {type(e).__name__}: {str(e)}"
+        )
 
 @app.post("/api/sessions/{session_id}/step", response_model=StepResponse)
 async def step_session(session_id: str) -> StepResponse:

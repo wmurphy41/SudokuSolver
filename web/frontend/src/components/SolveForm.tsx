@@ -1,8 +1,20 @@
 import { useState } from 'react';
-import { solve } from '../services/api';
-import type { SolveResponse, Grid } from '../types/api';
+import { solve, createSession, stepSession, deleteSession } from '../services/api';
+import type { SolveResponse, Grid, StepInfo } from '../types/api';
 import ResultPanel from './ResultPanel';
 import EditableGrid from './EditableGrid';
+import {
+  containerStyle,
+  formGroupStyle,
+  labelStyle,
+  radioGroupStyle,
+  getRadioLabelStyle,
+  getRadioInputStyle,
+  sampleLoaderStyle,
+  getSampleButtonStyle,
+  getButtonStyle,
+  newPuzzleButtonStyle,
+} from './solveformCSS';
 
 /**
  * SolveForm Component
@@ -34,6 +46,11 @@ export default function SolveForm() {
   const [originalGrid, setOriginalGrid] = useState<Grid | null>(null);
   const [mode, setMode] = useState<Mode>('edit');
   const [solveMode, setSolveMode] = useState<SolveMode>('full');
+  
+  // Step session state
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [stepInfo, setStepInfo] = useState<StepInfo | null>(null);
+  const [stepDone, setStepDone] = useState<boolean>(false);
 
   /**
    * Load a sample puzzle or clear the grid
@@ -69,12 +86,24 @@ export default function SolveForm() {
 
     // Check solve mode
     if (solveMode === 'step') {
-      // Step-wise solving not yet implemented via UI
-      setValidationError('function not yet implemented');
-      setNetworkError(null);
+      setLoading(true);
       setResult(null);
       setOriginalGrid(null);
-      setMode('result');
+      setStepInfo(null);
+      setStepDone(false);
+
+      try {
+        const session = await createSession(grid, debugLevel);
+        setSessionId(session.session_id);
+        // Go to result view for step mode
+        setMode('result');
+      } catch (err) {
+        setNetworkError(err instanceof Error ? err.message : 'Failed to start step session');
+        setSessionId(null);
+        setMode('result');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -106,6 +135,37 @@ export default function SolveForm() {
     }
   };
 
+  const handleNextStep = async () => {
+    if (!sessionId) return;
+    setLoading(true);
+    setValidationError(null);
+    setNetworkError(null);
+
+    try {
+      const response = await stepSession(sessionId);
+      // Update the grid with the latest state from backend
+      setGrid(response.grid);
+      setStepInfo(response.step);
+      setStepDone(response.done);
+    } catch (err) {
+      setNetworkError(err instanceof Error ? err.message : 'Failed to apply next step');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEndSession = async () => {
+    if (sessionId) {
+      try {
+        await deleteSession(sessionId);
+      } catch {
+        // Ignore errors on delete; we are resetting state anyway
+      }
+    }
+    // Reuse existing new-puzzle behavior for full reset (already clears session state)
+    handleNewPuzzle();
+  };
+
   const handleNewPuzzle = () => {
     setGrid(EMPTY_GRID);
     setResult(null);
@@ -115,6 +175,9 @@ export default function SolveForm() {
     setLoading(false);
     setMode('edit');
     setSolveMode('full'); // reset to Full Solve
+    setSessionId(null);
+    setStepInfo(null);
+    setStepDone(false);
     
     // Focus first cell after state updates
     requestAnimationFrame(() => {
@@ -123,90 +186,6 @@ export default function SolveForm() {
     });
   };
 
-  // Styles
-  const containerStyle: React.CSSProperties = {
-    maxWidth: '600px',
-    margin: '0 auto',
-    padding: '20px',
-  };
-
-  const formGroupStyle: React.CSSProperties = {
-    marginBottom: '16px',
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: 'block',
-    marginBottom: '8px',
-    fontWeight: 'bold',
-    fontSize: '14px',
-    color: '#333',
-    textAlign: 'left',
-  };
-
-  const radioGroupStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'row',  // Changed to row for horizontal layout
-    gap: '16px',  // Increased gap for better spacing
-    flexWrap: 'wrap',  // Allow wrapping on small screens
-  };
-
-  const radioLabelStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: '14px',
-    color: '#333',
-    cursor: loading ? 'not-allowed' : 'pointer',
-  };
-
-  const radioInputStyle: React.CSSProperties = {
-    marginRight: '8px',
-    cursor: loading ? 'not-allowed' : 'pointer',
-  };
-
-  const sampleLoaderStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '14px',
-  };
-
-  const sampleButtonStyle: React.CSSProperties = {
-    padding: '6px 12px',
-    fontSize: '13px',
-    fontWeight: '500',
-    color: '#007bff',
-    backgroundColor: 'white',
-    border: '1px solid #007bff',
-    borderRadius: '4px',
-    cursor: loading ? 'not-allowed' : 'pointer',
-    transition: 'all 0.2s',
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    color: 'white',
-    backgroundColor: loading ? '#6c757d' : '#007bff',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: loading ? 'not-allowed' : 'pointer',
-    transition: 'background-color 0.2s',
-  };
-
-  const newPuzzleButtonStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    color: 'white',
-    backgroundColor: '#28a745',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  };
 
   return (
     <div style={containerStyle}>
@@ -229,7 +208,7 @@ export default function SolveForm() {
               <span style={{ fontWeight: 'bold', color: '#333' }}>Load Example:</span>
               <button
                 type="button"
-                style={sampleButtonStyle}
+                style={getSampleButtonStyle(loading)}
                 onClick={() => loadSamplePuzzle('clear')}
                 disabled={loading}
                 onMouseOver={(e) => {
@@ -249,7 +228,7 @@ export default function SolveForm() {
               </button>
               <button
                 type="button"
-                style={sampleButtonStyle}
+                style={getSampleButtonStyle(loading)}
                 onClick={() => loadSamplePuzzle('easy')}
                 disabled={loading}
                 onMouseOver={(e) => {
@@ -269,7 +248,7 @@ export default function SolveForm() {
               </button>
               <button
                 type="button"
-                style={sampleButtonStyle}
+                style={getSampleButtonStyle(loading)}
                 onClick={() => loadSamplePuzzle('medium')}
                 disabled={loading}
                 onMouseOver={(e) => {
@@ -289,7 +268,7 @@ export default function SolveForm() {
               </button>
               <button
                 type="button"
-                style={sampleButtonStyle}
+                style={getSampleButtonStyle(loading)}
                 onClick={() => loadSamplePuzzle('hard')}
                 disabled={loading}
                 onMouseOver={(e) => {
@@ -315,7 +294,7 @@ export default function SolveForm() {
               Debug Level
             </label>
             <div style={radioGroupStyle}>
-              <label style={radioLabelStyle}>
+              <label style={getRadioLabelStyle(loading)}>
                 <input
                   type="radio"
                   name="debugLevel"
@@ -323,11 +302,11 @@ export default function SolveForm() {
                   checked={debugLevel === 0}
                   onChange={(e) => setDebugLevel(parseInt(e.target.value))}
                   disabled={loading}
-                  style={radioInputStyle}
+                  style={getRadioInputStyle(loading)}
                 />
                 <span>0 - Silent</span>
               </label>
-              <label style={radioLabelStyle}>
+              <label style={getRadioLabelStyle(loading)}>
                 <input
                   type="radio"
                   name="debugLevel"
@@ -335,11 +314,11 @@ export default function SolveForm() {
                   checked={debugLevel === 1}
                   onChange={(e) => setDebugLevel(parseInt(e.target.value))}
                   disabled={loading}
-                  style={radioInputStyle}
+                  style={getRadioInputStyle(loading)}
                 />
                 <span>1 - Informational</span>
               </label>
-              <label style={radioLabelStyle}>
+              <label style={getRadioLabelStyle(loading)}>
                 <input
                   type="radio"
                   name="debugLevel"
@@ -347,11 +326,11 @@ export default function SolveForm() {
                   checked={debugLevel === 2}
                   onChange={(e) => setDebugLevel(parseInt(e.target.value))}
                   disabled={loading}
-                  style={radioInputStyle}
+                  style={getRadioInputStyle(loading)}
                 />
                 <span>2 - Basic</span>
               </label>
-              <label style={radioLabelStyle}>
+              <label style={getRadioLabelStyle(loading)}>
                 <input
                   type="radio"
                   name="debugLevel"
@@ -359,7 +338,7 @@ export default function SolveForm() {
                   checked={debugLevel === 3}
                   onChange={(e) => setDebugLevel(parseInt(e.target.value))}
                   disabled={loading}
-                  style={radioInputStyle}
+                  style={getRadioInputStyle(loading)}
                 />
                 <span>3 - Detailed</span>
               </label>
@@ -371,7 +350,7 @@ export default function SolveForm() {
               Solve Mode
             </label>
             <div style={radioGroupStyle}>
-              <label style={radioLabelStyle}>
+              <label style={getRadioLabelStyle(loading)}>
                 <input
                   type="radio"
                   name="solveMode"
@@ -379,11 +358,11 @@ export default function SolveForm() {
                   checked={solveMode === 'full'}
                   onChange={() => setSolveMode('full')}
                   disabled={loading}
-                  style={radioInputStyle}
+                  style={getRadioInputStyle(loading)}
                 />
                 <span>Full Solve</span>
               </label>
-              <label style={radioLabelStyle}>
+              <label style={getRadioLabelStyle(loading)}>
                 <input
                   type="radio"
                   name="solveMode"
@@ -391,7 +370,7 @@ export default function SolveForm() {
                   checked={solveMode === 'step'}
                   onChange={() => setSolveMode('step')}
                   disabled={loading}
-                  style={radioInputStyle}
+                  style={getRadioInputStyle(loading)}
                 />
                 <span>Step Solve</span>
               </label>
@@ -400,7 +379,7 @@ export default function SolveForm() {
 
           <button
             type="submit"
-            style={buttonStyle}
+            style={getButtonStyle(loading)}
             disabled={loading}
             onMouseOver={(e) => {
               if (!loading) {
@@ -418,8 +397,8 @@ export default function SolveForm() {
         </form>
       )}
 
-      {/* RESULT MODE: Show result panel and New Puzzle button */}
-      {mode === 'result' && (
+      {/* RESULT MODE: Show result panel based on solve mode */}
+      {mode === 'result' && solveMode === 'full' && (
         <>
           <ResultPanel 
             result={result} 
@@ -440,6 +419,75 @@ export default function SolveForm() {
               }}
             >
               New Puzzle
+            </button>
+          </div>
+        </>
+      )}
+
+      {mode === 'result' && solveMode === 'step' && (
+        <>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelStyle}>Current Puzzle State</label>
+            <EditableGrid
+              value={grid}
+              onChange={() => {}}
+              disabled={true}
+            />
+          </div>
+
+          <div style={{ marginBottom: '16px', textAlign: 'left', fontSize: '14px' }}>
+            <strong>Last Step:</strong>
+            {stepInfo ? (
+              <div>
+                <div>Rule: {stepInfo.rule ?? '(none)'}</div>
+                <div>
+                  Cell:{' '}
+                  {stepInfo.row != null && stepInfo.col != null
+                    ? `(${stepInfo.row + 1}, ${stepInfo.col + 1})`
+                    : '(n/a)'}
+                </div>
+                <div>Value: {stepInfo.value ?? '(n/a)'}</div>
+              </div>
+            ) : (
+              <div>No steps applied yet. Click "Next Step" to begin.</div>
+            )}
+            {stepDone && <div style={{ color: '#28a745', fontWeight: 'bold', marginTop: '8px' }}>Done: no more steps available.</div>}
+            {networkError && <div style={{ color: '#b00020', marginTop: '8px' }}>{networkError}</div>}
+            {validationError && <div style={{ color: '#b00020', marginTop: '8px' }}>{validationError}</div>}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <button
+              type="button"
+              style={{ ...getButtonStyle(loading), width: '50%' }}
+              disabled={loading || !sessionId || stepDone}
+              onClick={handleNextStep}
+              onMouseOver={(e) => {
+                if (!loading && !stepDone) {
+                  e.currentTarget.style.backgroundColor = '#0056b3';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!loading && !stepDone) {
+                  e.currentTarget.style.backgroundColor = '#007bff';
+                }
+              }}
+            >
+              {loading ? 'Stepping...' : 'Next Step'}
+            </button>
+
+            <button
+              type="button"
+              style={{ ...newPuzzleButtonStyle, width: '50%' }}
+              onClick={handleEndSession}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = '#218838';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = '#28a745';
+              }}
+            >
+              End Session / New Puzzle
             </button>
           </div>
         </>
