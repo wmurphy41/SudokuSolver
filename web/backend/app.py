@@ -123,10 +123,10 @@ class StepInfo(BaseModel):
     value: Optional[int] = None
 
 class StepResponse(BaseModel):
-    """Model for step response."""
-    grid: Grid
-    step: StepInfo
-    done: bool
+    """Model for step-wise solve responses (same shape as SolveResponse)."""
+    solution: Optional[Grid]
+    success: bool
+    message: str
 
 
 def _to_int_grid(solver: SudokuSolver) -> Grid:
@@ -272,7 +272,7 @@ async def step_session(session_id: str) -> StepResponse:
         session_id: Session identifier
         
     Returns:
-        StepResponse with updated grid, step info, and completion flag
+        StepResponse with updated grid, success flag, and message
     """
     r = get_redis()
     raw = r.get(f"sudoku:session:{session_id}")
@@ -281,16 +281,21 @@ async def step_session(session_id: str) -> StepResponse:
 
     data = json.loads(raw)
     grid: Grid = data["grid"]
+    debug_level: int = int(data.get("debug_level", 0))
 
-    # For Phase 1, use the stubbed apply_one_step implementation
-    new_grid, step_info_dict, done = apply_one_step(grid)
+    # New apply_one_step signature: (grid, success, message)
+    new_grid, success, message = apply_one_step(grid, debug_level)
 
-    # Persist updated grid
+    # Persist updated grid back into the session
     data["grid"] = new_grid
     r.set(f"sudoku:session:{session_id}", json.dumps(data))
 
-    step_info = StepInfo(**step_info_dict)
-    return StepResponse(grid=new_grid, step=step_info, done=done)
+    # For step mode, always return the updated grid as the "solution"
+    return StepResponse(
+        solution=new_grid,
+        success=success,
+        message=message,
+    )
 
 @app.delete("/api/sessions/{session_id}")
 async def delete_session(session_id: str) -> Dict[str, bool]:

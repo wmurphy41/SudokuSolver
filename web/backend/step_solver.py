@@ -1,36 +1,73 @@
 """
-Step-wise Sudoku solver (stub implementation).
+Step-wise Sudoku solver using the real SudokuSolver engine.
 
-This module provides a minimal stub for step-wise solving.
-The stub fills the first empty cell with 1 and marks done when no zeros remain.
+This module provides step-wise solving by integrating with the SudokuSolver class.
+Each step runs one pass of all solving techniques using step_solve().
 """
 
-from typing import List, Tuple, Dict, Any
+import io
+from contextlib import redirect_stdout
+from typing import List, Tuple
+import sys
+
+# Import SudokuSolver - use the same import path as app.py
+try:
+    from src.sudoku_solver import SudokuSolver
+except ImportError:
+    # Try alternative import for Docker container
+    try:
+        sys.path.insert(0, '/app')
+        from src.sudoku_solver import SudokuSolver
+    except ImportError:
+        # Fallback for development
+        from pathlib import Path
+        project_root = Path(__file__).parent.parent.parent
+        sys.path.insert(0, str(project_root))
+        from src.sudoku_solver import SudokuSolver
 
 Grid = List[List[int]]
 
 
-def apply_one_step(grid: Grid) -> Tuple[Grid, Dict[str, Any], bool]:
+def apply_one_step(grid: Grid, debug_level: int = 0) -> Tuple[Grid, bool, str]:
     """
-    TEMPORARY stub for step-wise solving.
-    - Finds the first cell with 0 and sets it to 1.
-    - If no zeros remain, marks done = True.
+    Apply a single logical solving step using SudokuSolver.
+    
+    Logic:
+    - Create a SudokuSolver from the grid using the given debug level.
+    - Redirect stdout to a buffer while running step_solve().
+    - If the buffer contains any text, use that as the message.
+    - Otherwise, if step_solve returned True, message = "Solved".
+      If it returned False, message = "In Progress".
     
     Returns:
-        new_grid: updated grid after the step
-        step_info: dict with keys rule, row, col, value
-        done: True if there are no more zeros in the grid
+        new_grid: updated 9x9 grid of integers
+        success: flag returned from step_solve() (True if puzzle solved)
+        message: log or status message
     """
-    new_grid = [row[:] for row in grid]
-    step_info: Dict[str, Any] = {"rule": None, "row": None, "col": None, "value": None}
+    buf = io.StringIO()
+    success = False
 
-    for r in range(9):
-        for c in range(9):
-            if new_grid[r][c] == 0:
-                new_grid[r][c] = 1
-                step_info = {"rule": "stub-fill-1", "row": r, "col": c, "value": 1}
-                return new_grid, step_info, False
+    with redirect_stdout(buf):
+        solver = SudokuSolver(grid, debug_level=debug_level)
+        success = solver.step_solve()
 
-    # No zeros: we're done
-    return new_grid, step_info, True
+    # Capture logs from stdout
+    logs = buf.getvalue()
+    logs_stripped = logs.strip()
+
+    if logs_stripped:
+        message = logs
+    else:
+        message = "Solved" if success else "In Progress"
+
+    # Extract updated grid from solver
+    new_grid: Grid = []
+    for row in solver.grid:
+        int_row: List[int] = []
+        for cell in row:
+            value = getattr(cell, "value", 0)
+            int_row.append(int(value) if isinstance(value, int) else 0)
+        new_grid.append(int_row)
+
+    return new_grid, success, message
 

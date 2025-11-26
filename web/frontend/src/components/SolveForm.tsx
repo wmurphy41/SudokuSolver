@@ -144,11 +144,21 @@ export default function SolveForm() {
     try {
       const response = await stepSession(sessionId);
       // Update the grid with the latest state from backend
-      setGrid(response.grid);
-      setStepInfo(response.step);
-      setStepDone(response.done);
+      if (response.solution) {
+        setGrid(response.solution);
+      }
+      // Update step info from message (always show message, even if empty)
+      setStepInfo({
+        rule: response.message || 'Step completed',
+        row: null,
+        col: null,
+        value: null,
+      });
+      // Use success flag as done flag
+      setStepDone(response.success);
     } catch (err) {
       setNetworkError(err instanceof Error ? err.message : 'Failed to apply next step');
+      setStepInfo(null);
     } finally {
       setLoading(false);
     }
@@ -428,30 +438,27 @@ export default function SolveForm() {
         <>
           <div style={{ marginBottom: '16px' }}>
             <label style={labelStyle}>Current Puzzle State</label>
-            <EditableGrid
-              value={grid}
-              onChange={() => {}}
-              disabled={true}
-            />
+            {grid && grid.length === 9 ? (
+              <EditableGrid
+                value={grid}
+                onChange={() => {}}
+                disabled={true}
+              />
+            ) : (
+              <div style={{ color: '#b00020' }}>Error: Invalid grid state</div>
+            )}
           </div>
 
           <div style={{ marginBottom: '16px', textAlign: 'left', fontSize: '14px' }}>
-            <strong>Last Step:</strong>
-            {stepInfo ? (
-              <div>
-                <div>Rule: {stepInfo.rule ?? '(none)'}</div>
-                <div>
-                  Cell:{' '}
-                  {stepInfo.row != null && stepInfo.col != null
-                    ? `(${stepInfo.row + 1}, ${stepInfo.col + 1})`
-                    : '(n/a)'}
-                </div>
-                <div>Value: {stepInfo.value ?? '(n/a)'}</div>
+            <strong>Step Status:</strong>
+            {stepInfo && stepInfo.rule ? (
+              <div style={{ marginTop: '8px', whiteSpace: 'pre-wrap' }}>
+                {stepInfo.rule}
               </div>
             ) : (
-              <div>No steps applied yet. Click "Next Step" to begin.</div>
+              <div style={{ marginTop: '8px' }}>No steps applied yet. Click "Next Step" to begin.</div>
             )}
-            {stepDone && <div style={{ color: '#28a745', fontWeight: 'bold', marginTop: '8px' }}>Done: no more steps available.</div>}
+            {stepDone && <div style={{ color: '#28a745', fontWeight: 'bold', marginTop: '8px' }}>✓ Puzzle solved!</div>}
             {networkError && <div style={{ color: '#b00020', marginTop: '8px' }}>{networkError}</div>}
             {validationError && <div style={{ color: '#b00020', marginTop: '8px' }}>{validationError}</div>}
           </div>

@@ -64,16 +64,16 @@ export interface StepInfo {
 }
 
 /**
- * Response from step endpoint
+ * Response from step endpoint (same shape as SolveResponse)
  * 
- * @property grid - Updated 9x9 grid after applying one step
- * @property step - Information about the step that was applied
- * @property done - Whether solving is complete (no more steps available)
+ * @property solution - Updated 9x9 grid after applying one step
+ * @property success - Whether the puzzle is solved after this step
+ * @property message - Human-readable status or log message
  */
 export interface StepResponse {
-  grid: Grid;
-  step: StepInfo;
-  done: boolean;
+  solution: Grid | null;
+  success: boolean;
+  message: string;
 }
 
 /**

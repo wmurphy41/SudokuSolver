@@ -233,7 +233,7 @@ class SudokuSolver:
         else:
             self._debug_print(1, "Progress made in this step.  Resulting puzzle:")
             self.print_grid(False)
-            self._debug_print(2, "Step completed: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
+            self._debug_print(2, f"Step completed: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
         
         return solved
     
