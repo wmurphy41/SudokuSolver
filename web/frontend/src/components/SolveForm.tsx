@@ -31,7 +31,8 @@ type SolveMode = 'full' | 'step';
 const SAMPLE_PUZZLES: Record<string, Grid> = {
   easy: [[5, 0, 0, 4, 3, 0, 1, 0, 0],[0, 0, 3, 1, 5, 0, 0, 4, 8],[1, 0, 0, 0, 2, 0, 0, 7, 0],[7, 0, 0, 6, 0, 0, 5, 1, 0],[0, 4, 0, 0, 0, 5, 7, 2, 9],[0, 5, 1, 9, 0, 4, 0, 0, 0],[6, 2, 0, 7, 0, 8, 0, 0, 1],[3, 9, 8, 0, 0, 0, 0, 0, 7],[0, 0, 7, 5, 0, 0, 9, 0, 2]],
   medium: [[0, 5, 0, 0, 4, 9, 3, 0, 0],[0, 0, 0, 0, 0, 0, 0, 7, 0],[0, 0, 0, 0, 1, 0, 6, 0, 0],[0, 0, 9, 0, 0, 0, 5, 0, 8],[0, 0, 3, 0, 9, 1, 0, 0, 0],[2, 0, 0, 0, 8, 5, 0, 0, 0],[0, 4, 0, 0, 5, 2, 0, 0, 0],[0, 0, 1, 6, 0, 0, 0, 4, 0],[6, 0, 0, 0, 0, 0, 0, 2, 0]],
-  hard: [[0, 0, 0, 9, 3, 0, 4, 0, 0],[0, 4, 0, 0, 5, 0, 8, 0, 0],[5, 0, 0, 0, 0, 0, 0, 9, 6],[0, 0, 0, 4, 0, 1, 0, 6, 0],[0, 2, 0, 0, 0, 0, 0, 0, 8],[0, 0, 8, 0, 0, 6, 0, 0, 0],[0, 3, 0, 0, 2, 0, 0, 1, 0],[0, 0, 2, 0, 0, 0, 9, 7, 0],[0, 1, 0, 0, 0, 0, 0, 0, 0]],
+  hard:   [[0, 7, 6, 2, 0, 0, 0, 5, 0],[0, 0, 0, 8, 7, 0, 3, 0, 0],[3, 0, 0, 0, 0, 1, 0, 0, 0],[1, 0, 0, 0, 0, 0, 6, 0, 0],[0, 0, 4, 0, 0, 0, 0, 3, 9],[5, 0, 0, 0, 4, 0, 0, 2, 0],[0, 0, 0, 0, 2, 0, 0, 0, 0],[0, 0, 2, 9, 0, 0, 0, 4, 7],[0, 9, 0, 0, 8, 0, 0, 0, 0]]
+  // hard: [[0, 0, 0, 9, 3, 0, 4, 0, 0],[0, 4, 0, 0, 5, 0, 8, 0, 0],[5, 0, 0, 0, 0, 0, 0, 9, 6],[0, 0, 0, 4, 0, 1, 0, 6, 0],[0, 2, 0, 0, 0, 0, 0, 0, 8],[0, 0, 8, 0, 0, 6, 0, 0, 0],[0, 3, 0, 0, 2, 0, 0, 1, 0],[0, 0, 2, 0, 0, 0, 9, 7, 0],[0, 1, 0, 0, 0, 0, 0, 0, 0]],
 };
 
 // Empty grid for initialization and clear button
@@ -39,7 +40,7 @@ const EMPTY_GRID: Grid = Array.from({ length: 9 }, () => Array(9).fill(0));
 
 export default function SolveForm() {
   const [grid, setGrid] = useState<Grid>(EMPTY_GRID);
-  const [debugLevel, setDebugLevel] = useState<number>(0);
+  const [debugLevel, setDebugLevel] = useState<number>(0); 
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<SolveResponse | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);

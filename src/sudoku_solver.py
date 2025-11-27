@@ -22,6 +22,16 @@ class SudokuSolver:
     BLOCK_SIZE = 3
     VALID_VALUES = set(range(1, 10))
     
+    # Class attribute: list of solving techniques in order
+    # Each technique is a tuple: (method_name, description)
+    SOLVING_TECHNIQUES = [
+        ('_fill_naked_singles', 'Fill Naked Singles'),
+        ('_fill_hidden_singles', 'Fill Hidden Singles'),
+        ('_prune_intersection_removal', 'Prune Intersection Removal'),
+        ('_prune_naked_groups', 'Prune Naked Groups'),
+        ('_prune_hidden_groups', 'Prune Hidden Groups'),
+    ]
+    
     def __init__(self, puzzle: List[List[int]], debug_level: int = 0) -> None:
         """
         Initialize the Sudoku solver.
@@ -36,6 +46,12 @@ class SudokuSolver:
         self.debug_level = debug_level
         self.metrics = SolvingMetrics()
         self.grid: List[List[SudokuCell]] = []
+        
+        # Track which technique to use next (cycles through SOLVING_TECHNIQUES)
+        self._current_technique_index = 0
+        
+        # Track if any changes were made in the current pass through all techniques
+        self._changes_made_in_current_pass = False
         
         self._validate_puzzle(puzzle)
         self._load_puzzle(puzzle)
@@ -124,7 +140,7 @@ class SudokuSolver:
         Serialize the solver state to a dictionary.
         
         Returns:
-            Dictionary containing grid (with values and candidates) and debug_level
+            Dictionary containing grid (with values and candidates), debug_level, and current_technique_index
         """
         grid_data = []
         for row in self.grid:
@@ -139,7 +155,9 @@ class SudokuSolver:
         
         return {
             "grid": grid_data,
-            "debug_level": self.debug_level
+            "debug_level": self.debug_level,
+            "current_technique_index": self._current_technique_index,
+            "changes_made_in_current_pass": self._changes_made_in_current_pass
         }
     
     @classmethod
@@ -148,19 +166,23 @@ class SudokuSolver:
         Restore a SudokuSolver instance from a serialized dictionary.
         
         Args:
-            data: Dictionary containing grid (with values and candidates) and debug_level
+            data: Dictionary containing grid (with values and candidates), debug_level, and current_technique_index
             
         Returns:
             Restored SudokuSolver instance
         """
         debug_level = data.get("debug_level", 0)
         grid_data = data["grid"]
+        current_technique_index = data.get("current_technique_index", 0)
+        changes_made_in_current_pass = data.get("changes_made_in_current_pass", False)
         
         # Create a solver instance (we'll bypass normal initialization)
         solver = cls.__new__(cls)
         solver.debug_level = debug_level
         solver.metrics = SolvingMetrics()
         solver.grid = []
+        solver._current_technique_index = current_technique_index
+        solver._changes_made_in_current_pass = changes_made_in_current_pass
         
         # Restore grid with values and candidates
         for row_idx, row_data in enumerate(grid_data):
@@ -271,6 +293,81 @@ class SudokuSolver:
     
     def step_solve(self) -> Literal["solving", "solved", "stuck"]:
         """
+        Perform a single solving technique and return the results.
+        Cycles through techniques, calling one per invocation.
+        The technique index is maintained across serialization/deserialization.
+        Tracks if any changes were made during a complete pass through all techniques.
+        
+        Returns:
+            "solved" if puzzle is solved after this step
+            "stuck" if no progress was made during a complete pass through all techniques
+            "solving" otherwise (progress was made but puzzle not yet solved)
+        """
+        self._debug_print(1, "Performing one solving step...")
+        self.print_grid(False)
+        
+        # Increment solve loop counter for metrics tracking
+        self.metrics.solve_loops += 1
+        self._debug_print(2, f"Solve step: {self.metrics.solve_loops}")
+        
+        # Check if we're starting a new pass (reset tracking flag)
+        if self._current_technique_index == 0:
+            self._changes_made_in_current_pass = False
+        
+        # Get the current technique to apply
+        technique_name, technique_desc = self.SOLVING_TECHNIQUES[self._current_technique_index]
+        technique_method = getattr(self, technique_name)
+        
+        self._debug_print(1, f"Applying technique: {technique_desc}")
+        
+        # Apply the technique
+        cells_filled = 0
+        candidates_pruned = 0
+        
+        if technique_name.startswith('_fill_'):
+            cells_filled = technique_method()
+        elif technique_name.startswith('_prune_'):
+            candidates_pruned = technique_method()
+        
+        # Track if any changes were made in this step
+        if cells_filled > 0 or candidates_pruned > 0:
+            self._changes_made_in_current_pass = True
+        
+        # Check if puzzle is solved
+        solved = self.count_empty_cells() == 0
+        
+        self._debug_print(2, f"Step completed: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
+        
+        # Check if we're at the last technique in the list
+        is_last_technique = (self._current_technique_index == len(self.SOLVING_TECHNIQUES) - 1)
+        
+        if solved:
+            self._debug_print(1, "Puzzle is now solved!")
+            self._print_solution_summary(0, solved)  # Pass 0 for initial_empty since we don't track it in step mode
+            # Move to next technique for next call before returning
+            self._current_technique_index = (self._current_technique_index + 1) % len(self.SOLVING_TECHNIQUES)
+            return "solved"
+        elif is_last_technique and not self._changes_made_in_current_pass:
+            # Last technique and no changes made during the entire pass
+            self._debug_print(2, "No progress made during complete pass through all techniques")
+            # Move to next technique for next call (will cycle back to 0)
+            self._current_technique_index = (self._current_technique_index + 1) % len(self.SOLVING_TECHNIQUES)
+            return "stuck"
+        elif cells_filled == 0 and candidates_pruned == 0:
+            self._debug_print(2, "No progress made in this step")
+            # Move to next technique for next call
+            self._current_technique_index = (self._current_technique_index + 1) % len(self.SOLVING_TECHNIQUES)
+            return "solving"
+        else:
+            self._debug_print(1, "Progress made in this step.  Resulting puzzle:")
+            self.print_grid(False)
+            self._debug_print(2, f"Step completed: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
+            # Move to next technique for next call
+            self._current_technique_index = (self._current_technique_index + 1) % len(self.SOLVING_TECHNIQUES)
+            return "solving"
+
+    def one_pass_solve(self) -> Literal["solving", "solved", "stuck"]:
+        """
         Perform one pass through all solving techniques without looping.
         
         Returns:
@@ -314,7 +411,7 @@ class SudokuSolver:
             self.print_grid(False)
             self._debug_print(2, f"Step completed: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
             return "solving"
-    
+   
     def _fill_naked_singles(self) -> int:
         """Fill cells that have only one candidate."""
         self._debug_print(2, "Checking for naked singles...")
