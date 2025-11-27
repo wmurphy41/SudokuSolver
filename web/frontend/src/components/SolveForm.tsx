@@ -204,7 +204,7 @@ export default function SolveForm() {
         <form onSubmit={handleSubmit}>
           <div style={formGroupStyle}>
             <label style={labelStyle}>
-              Puzzle
+              Enter Puzzle below or load an example
             </label>
             <EditableGrid 
               value={grid} 
@@ -449,18 +449,30 @@ export default function SolveForm() {
             )}
           </div>
 
-          <div style={{ marginBottom: '16px', textAlign: 'left', fontSize: '14px' }}>
-            <strong>Step Status:</strong>
-            {stepInfo && stepInfo.rule ? (
-              <div style={{ marginTop: '8px', whiteSpace: 'pre-wrap' }}>
-                {stepInfo.rule}
-              </div>
-            ) : (
-              <div style={{ marginTop: '8px' }}>No steps applied yet. Click "Next Step" to begin.</div>
-            )}
-            {stepDone && <div style={{ color: '#28a745', fontWeight: 'bold', marginTop: '8px' }}>✓ Puzzle solved!</div>}
-            {networkError && <div style={{ color: '#b00020', marginTop: '8px' }}>{networkError}</div>}
-            {validationError && <div style={{ color: '#b00020', marginTop: '8px' }}>{validationError}</div>}
+          <div className="message-box" aria-label="Step status" style={{ marginBottom: '16px' }}>
+            <div className="message-label">Step Status:</div>
+            <div className="message-content">
+              {stepInfo && stepInfo.rule ? (
+                stepInfo.rule
+              ) : (
+                'No steps applied yet. Click "Next Step" to begin.'
+              )}
+              {stepDone && (
+                <div style={{ color: '#28a745', fontWeight: 'bold', marginTop: '8px' }}>
+                  ✓ Puzzle solved!
+                </div>
+              )}
+              {networkError && (
+                <div style={{ color: '#b00020', marginTop: '8px' }}>
+                  {networkError}
+                </div>
+              )}
+              {validationError && (
+                <div style={{ color: '#b00020', marginTop: '8px' }}>
+                  {validationError}
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>

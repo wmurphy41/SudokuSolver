@@ -92,14 +92,6 @@ export default function ResultPanel({ result, validationError, networkError, ori
           Fail
         </div>
 
-        {/* SHOW BOTH GRIDS - User can see what couldn't be solved */}
-        {originalGrid && (
-          <div aria-label="Original puzzle grid">
-            <div className="solution-label">Original Puzzle:</div>
-            {renderGridTable(originalGrid)}
-          </div>
-        )}
-
         {result.solution && (
           <div aria-label="Attempted solution grid">
             <div className="solution-label">Attempted Solution:</div>
@@ -126,14 +118,6 @@ export default function ResultPanel({ result, validationError, networkError, ori
         <div className="status-badge status-success" role="status" aria-live="polite">
           Success
         </div>
-
-        {/* Original puzzle grid */}
-        {originalGrid && (
-          <div aria-label="Original puzzle grid">
-            <div className="solution-label">Original Puzzle:</div>
-            {renderGridTable(originalGrid)}
-          </div>
-        )}
 
         {/* Solution grid */}
         {result.solution && (

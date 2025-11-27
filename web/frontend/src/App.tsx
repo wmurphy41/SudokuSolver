@@ -43,7 +43,7 @@ const titleStyle: React.CSSProperties = {
 }
 
 const mainStyle: React.CSSProperties = {
-  padding: '40px 20px',
+  padding: '40px 10px',
 }
 
 export default App

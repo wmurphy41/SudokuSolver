@@ -3,10 +3,16 @@
 # Use this for deploying to AWS Lightsail or other production environments
 
 services:
+  # Redis service for session storage
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Note: Not exposing port 6379 to host - only accessible within Docker network
+
   # FastAPI backend service
   backend:
     # Pull pre-built image from GHCR
-    image: ghcr.io/wmurphy41/sudoku-backend:latest
+    image: ghcr.io/wmurphy41/sudoku-backend:v2025.11.26
     
     # Container name for easy reference
     container_name: sudoku-backend
@@ -16,6 +22,10 @@ services:
     expose:
       - "8000"
     
+    # Depends on Redis service
+    depends_on:
+      - redis
+    
     # Restart policy: restart unless manually stopped
     restart: unless-stopped
     
@@ -23,6 +33,7 @@ services:
     environment:
       - PYTHONPATH=/app/src
       - PYTHONUNBUFFERED=1
+      - REDIS_URL=redis://redis:6379/0
     
     # Health check to ensure service is running
     healthcheck:
@@ -35,7 +46,7 @@ services:
   # Nginx + React frontend service
   web:
     # Pull pre-built image from GHCR
-    image: ghcr.io/wmurphy41/sudoku-web:latest
+    image: ghcr.io/wmurphy41/sudoku-web:v2025.11.26
     
     # Container name for easy reference
     container_name: sudoku-web
@@ -50,6 +61,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+      redis:
+        condition: service_started
     
     # Restart policy: restart unless manually stopped
     restart: unless-stopped
@@ -66,6 +79,7 @@ services:
 # 1. Build and push with version: .\scripts\build-push.ps1 v0.1.0
 # 2. Update image tags above to: ghcr.io/wmurphy41/sudoku-backend:v0.1.0
 # 3. This allows for version pinning and easy rollbacks
+
 
 
 
