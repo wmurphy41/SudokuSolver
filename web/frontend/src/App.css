@@ -296,3 +296,132 @@
   color: #b00020;
   margin-top: 4px;
 }
+
+/* ============================================================================
+   Mobile Responsive Styles for iPhone SE (375px width)
+   ============================================================================ */
+
+/* Primary breakpoint for iPhone SE and smaller devices (including Chrome DevTools emulation) */
+@media (max-width: 480px) {
+  /* Root container adjustments */
+  #root {
+    padding: 1rem;
+  }
+
+  /* App container and header adjustments */
+  header {
+    padding: 12px 10px !important;
+  }
+
+  main {
+    padding: 20px 8px !important;
+  }
+
+  header h1 {
+    font-size: 20px !important;
+  }
+
+  /* Reduce container padding - targets SolveForm container */
+  main > div {
+    padding: 12px !important;
+  }
+
+  /* Grid cell sizing - reduce from 44px to 30px */
+  .sudoku-grid td {
+    width: 30px !important;
+    height: 30px !important;
+    box-sizing: border-box;
+  }
+
+  /* Reduced grid-card padding */
+  .grid-card {
+    padding: 8px !important;
+  }
+
+  /* Grid table margin reduction */
+  .sudoku-grid {
+    margin: 6px 0;
+  }
+
+  /* Font size adjustments for cell inputs */
+  .editable-grid .cell-input {
+    font-size: 14px !important;
+  }
+
+  /* Solution grid filled cell font adjustment */
+  .solution-grid .filled-cell {
+    font-size: 14px !important;
+  }
+
+  /* Reduced font size for candidate digits */
+  .candidate-cell {
+    font-size: 8px;
+    line-height: 1.1;
+  }
+
+  /* Reduce candidate cell wrapper padding */
+  .candidate-cell-wrapper {
+    padding: 1px;
+  }
+
+  /* Result panel spacing reductions */
+  .result-panel {
+    margin-top: 16px;
+    gap: 12px;
+  }
+
+  /* Message box adjustments */
+  .message-box {
+    padding: 10px;
+    max-height: 120px;
+  }
+
+  .message-label {
+    font-size: 12px;
+  }
+
+  .message-content {
+    font-size: 12px;
+  }
+
+  /* Solution label adjustments */
+  .solution-label {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  /* Form group spacing reductions */
+  main form > div {
+    margin-bottom: 12px !important;
+  }
+
+  /* Reduce label font sizes */
+  main label {
+    font-size: 12px !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* Reduce button padding and font sizes */
+  main button {
+    padding: 10px !important;
+    font-size: 14px !important;
+  }
+
+  /* Reduce sample loader button padding */
+  main button[type="button"] {
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+  }
+
+  /* Reduce radio button label spacing */
+  main label input[type="radio"] {
+    margin-right: 6px !important;
+  }
+
+  main label span {
+    font-size: 12px !important;
+  }
+}
+
+/* Note: Secondary breakpoint removed - primary breakpoint now covers up to 480px */
+
