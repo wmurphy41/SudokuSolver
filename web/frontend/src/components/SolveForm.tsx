@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { solve, createSession, stepSession, deleteSession } from '../services/api';
 import type { SolveResponse, Grid, StepInfo } from '../types/api';
 import ResultPanel from './ResultPanel';
+import SolutionGrid from './SolutionGrid';
 import EditableGrid from './EditableGrid';
 import {
   containerStyle,
@@ -52,6 +53,7 @@ export default function SolveForm() {
   const [stepInfo, setStepInfo] = useState<StepInfo | null>(null);
   const [stepDone, setStepDone] = useState<boolean>(false);
   const [stepState, setStepState] = useState<"solving" | "stuck" | "solved">("solving");
+  const [stepCandidates, setStepCandidates] = useState<number[][][] | null>(null);
   
   // Toggle state for showing original puzzle
   const [showOriginal, setShowOriginal] = useState<boolean>(false);
@@ -96,6 +98,7 @@ export default function SolveForm() {
       setStepInfo(null);
       setStepDone(false);
       setStepState("solving"); // Initialize state to "solving"
+      setStepCandidates(null);
       setShowOriginal(false); // Reset toggle to default
 
       try {
@@ -164,6 +167,7 @@ export default function SolveForm() {
       // Update state from response
       setStepState(response.state || "solving");
       setStepDone(response.state === "solved");
+      setStepCandidates(response.candidates ?? null);
       // If Show Original is ON, switch it OFF when taking a step
       if (showOriginal) {
         setShowOriginal(false);
@@ -201,6 +205,7 @@ export default function SolveForm() {
     setStepInfo(null);
     setStepDone(false);
     setStepState("solving"); // Reset state to "solving"
+    setStepCandidates(null);
     setShowOriginal(false); // Reset toggle to default
     
     // Focus first cell after state updates
@@ -478,16 +483,33 @@ export default function SolveForm() {
                 {showOriginal ? 'Show Original ✓' : 'Show Original'}
               </button>
             </div>
-            {(showOriginal && originalGrid ? originalGrid : grid) && 
-             (showOriginal && originalGrid ? originalGrid.length === 9 : grid.length === 9) ? (
-              <EditableGrid
-                value={showOriginal && originalGrid ? originalGrid : grid}
-                onChange={() => {}}
-                disabled={true}
-              />
-            ) : (
-              <div style={{ color: '#b00020' }}>Error: Invalid grid state</div>
-            )}
+            {(() => {
+              const displayGrid =
+                showOriginal && originalGrid ? originalGrid : grid;
+              const isValidGrid = displayGrid && displayGrid.length === 9;
+
+              if (!isValidGrid) {
+                return <div style={{ color: '#b00020' }}>Error: Invalid grid state</div>;
+              }
+
+              if (showOriginal) {
+                return (
+                  <EditableGrid
+                    value={displayGrid}
+                    onChange={() => {}}
+                    disabled={true}
+                  />
+                );
+              }
+
+              return (
+                <SolutionGrid
+                  grid={displayGrid}
+                  showCandidates={true}
+                  candidates={stepCandidates ?? null}
+                />
+              );
+            })()}
           </div>
 
           <div className="message-box" aria-label="Step status" style={{ marginBottom: '16px' }}>

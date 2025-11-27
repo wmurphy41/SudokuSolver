@@ -16,6 +16,12 @@
 export type Grid = number[][];
 
 /**
+ * Candidate grid mapping each cell to a list of possible values.
+ * Filled cells should provide an empty array.
+ */
+export type CandidateGrid = number[][][];
+
+/**
  * Request payload for solving a sudoku puzzle
  * 
  * @property grid - 9x9 grid of integers (0 = empty, 1-9 = filled)
@@ -37,6 +43,7 @@ export interface SolveResponse {
   solution: Grid | null;
   success: boolean;
   message: string;
+  candidates?: CandidateGrid | null;
 }
 
 /**
@@ -76,6 +83,7 @@ export interface StepResponse {
   success: boolean;
   message: string;
   state: "solving" | "solved" | "stuck";
+  candidates?: CandidateGrid | null;
 }
 
 /**

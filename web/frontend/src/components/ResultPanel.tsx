@@ -1,4 +1,5 @@
 import type { SolveResponse, Grid } from '../types/api';
+import SolutionGrid from './SolutionGrid';
 
 /**
  * ResultPanel Component
@@ -14,32 +15,6 @@ interface ResultPanelProps {
   originalGrid?: Grid | null;
   showOriginal?: boolean;
   onToggleShowOriginal?: () => void;
-}
-
-/**
- * Helper function to render a 9x9 grid as an HTML table
- */
-function renderGridTable(grid: Grid) {
-  return (
-    <div className="grid-card">
-      <table className="sudoku-grid solution-grid">
-        <tbody>
-          {grid.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              {row.map((cell, colIndex) => (
-                <td 
-                  key={colIndex}
-                  className={cell === 0 ? 'empty-cell' : 'filled-cell'}
-                >
-                  {cell === 0 ? '' : cell}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
 }
 
 export default function ResultPanel({ result, validationError, networkError, originalGrid, showOriginal = false, onToggleShowOriginal }: ResultPanelProps) {
@@ -103,7 +78,11 @@ export default function ResultPanel({ result, validationError, networkError, ori
                 </button>
               )}
             </div>
-            {renderGridTable(showOriginal && originalGrid ? originalGrid : result.solution!)}
+            <SolutionGrid
+              grid={showOriginal && originalGrid ? originalGrid : result.solution!}
+              showCandidates={!showOriginal}
+              candidates={!showOriginal ? result.candidates ?? null : null}
+            />
           </div>
         )}
 
@@ -149,7 +128,11 @@ export default function ResultPanel({ result, validationError, networkError, ori
                 </button>
               )}
             </div>
-            {renderGridTable(showOriginal && originalGrid ? originalGrid : result.solution!)}
+            <SolutionGrid
+              grid={showOriginal && originalGrid ? originalGrid : result.solution!}
+              showCandidates={!showOriginal}
+              candidates={!showOriginal ? result.candidates ?? null : null}
+            />
           </div>
         )}
 

@@ -191,6 +191,32 @@
   font-weight: 600;
 }
 
+.candidate-cell-wrapper {
+  padding: 2px;
+}
+
+.candidate-grid {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  justify-content: space-between;
+}
+
+.candidate-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 2px;
+}
+
+.candidate-cell {
+  flex: 1;
+  font-size: 10px;
+  color: #666;
+  text-align: center;
+  line-height: 1.2;
+}
+
 /* Solution Box (Text Format) */
 .solution-box {
   border: 1px solid #ddd;

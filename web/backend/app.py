@@ -48,6 +48,7 @@ app = FastAPI(
 # Type aliases for 9x9 Sudoku grid
 Row = List[int]
 Grid = List[Row]
+CandidateGrid = List[List[List[int]]]
 
 # Redis client configuration
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -87,6 +88,7 @@ class SolveResponse(BaseModel):
     solution: Optional[Grid]  # None if invalid/unsolved
     success: bool
     message: str
+    candidates: Optional[CandidateGrid] = None
 
 # Session models for step-wise solving
 class StepSessionCreate(BaseModel):
@@ -128,6 +130,7 @@ class StepResponse(BaseModel):
     success: bool
     message: str
     state: str  # "solving", "solved", or "stuck"
+    candidates: Optional[CandidateGrid] = None  # Candidate lists for each cell
 
 
 def _to_int_grid(solver: SudokuSolver) -> Grid:
@@ -176,6 +179,8 @@ async def solve_sudoku(request: SolveRequest) -> SolveResponse:
     """
     log_buf = io.StringIO()
     
+    candidate_grid: Optional[CandidateGrid] = None
+
     try:
         # Capture all stdout from solver initialization and solving
         with redirect_stdout(log_buf):
@@ -190,13 +195,20 @@ async def solve_sudoku(request: SolveRequest) -> SolveResponse:
         except Exception:
             solution_grid = None
         
+        # Serialize candidate lists
+        try:
+            candidate_grid = solver.get_candidate_grid()
+        except Exception:
+            candidate_grid = None
+        
         # Get captured output
         message = log_buf.getvalue() or ""
         
         return SolveResponse(
             solution=solution_grid,  # Return grid even on failure to show progress
             success=bool(ok),
-            message=message if message else ("Solved" if ok else "Unsolved or invalid")
+            message=message if message else ("Solved" if ok else "Unsolved or invalid"),
+            candidates=candidate_grid,
         )
         
     except Exception as e:
@@ -205,7 +217,8 @@ async def solve_sudoku(request: SolveRequest) -> SolveResponse:
         return SolveResponse(
             solution=None, 
             success=False, 
-            message=message.strip()
+            message=message.strip(),
+            candidates=None,
         )
 
 # Session endpoints for step-wise solving
@@ -292,9 +305,9 @@ async def step_session(session_id: str) -> StepResponse:
     debug_level: int = int(data.get("debug_level", 0))
     solver_state = data.get("solver_state")  # May be None for old sessions
 
-    # apply_one_step signature: (grid, state, message, solver_state)
+    # apply_one_step signature: (grid, state, message, solver_state, candidates)
     # Pass solver_state if available, otherwise use grid (backward compatible)
-    new_grid, state, message, updated_solver_state = apply_one_step(
+    new_grid, state, message, updated_solver_state, candidate_grid = apply_one_step(
         grid, debug_level, solver_state
     )
 
@@ -313,6 +326,7 @@ async def step_session(session_id: str) -> StepResponse:
         success=success,
         message=message,
         state=state,
+        candidates=candidate_grid,
     )
 
 @app.delete("/api/sessions/{session_id}")

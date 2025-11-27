@@ -178,6 +178,22 @@ class SudokuSolver:
         
         return solver
     
+    def get_candidate_grid(self) -> List[List[List[int]]]:
+        """
+        Return a 9x9 grid of candidate lists for each cell.
+        Filled cells return an empty list.
+        """
+        candidate_grid: List[List[List[int]]] = []
+        for row in self.grid:
+            row_data: List[List[int]] = []
+            for cell in row:
+                if cell.is_empty():
+                    row_data.append(sorted(cell.candidates))
+                else:
+                    row_data.append([])
+            candidate_grid.append(row_data)
+        return candidate_grid
+    
     def count_empty_cells(self) -> int:
         """Count the number of empty cells remaining."""
         return sum(1 for cell in self._iterate_all_cells() if cell.is_empty())
