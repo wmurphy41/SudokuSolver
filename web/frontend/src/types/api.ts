@@ -69,11 +69,13 @@ export interface StepInfo {
  * @property solution - Updated 9x9 grid after applying one step
  * @property success - Whether the puzzle is solved after this step
  * @property message - Human-readable status or log message
+ * @property state - Current solving state: "solving", "solved", or "stuck"
  */
 export interface StepResponse {
   solution: Grid | null;
   success: boolean;
   message: string;
+  state: "solving" | "solved" | "stuck";
 }
 
 /**

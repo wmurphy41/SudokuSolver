@@ -51,6 +51,7 @@ export default function SolveForm() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [stepInfo, setStepInfo] = useState<StepInfo | null>(null);
   const [stepDone, setStepDone] = useState<boolean>(false);
+  const [stepState, setStepState] = useState<"solving" | "stuck" | "solved">("solving");
   
   // Toggle state for showing original puzzle
   const [showOriginal, setShowOriginal] = useState<boolean>(false);
@@ -94,6 +95,7 @@ export default function SolveForm() {
       setOriginalGrid(grid.map(row => [...row])); // Deep copy for step mode
       setStepInfo(null);
       setStepDone(false);
+      setStepState("solving"); // Initialize state to "solving"
       setShowOriginal(false); // Reset toggle to default
 
       try {
@@ -159,8 +161,9 @@ export default function SolveForm() {
         col: null,
         value: null,
       });
-      // Use success flag as done flag
-      setStepDone(response.success);
+      // Update state from response
+      setStepState(response.state || "solving");
+      setStepDone(response.state === "solved");
       // If Show Original is ON, switch it OFF when taking a step
       if (showOriginal) {
         setShowOriginal(false);
@@ -197,6 +200,7 @@ export default function SolveForm() {
     setSessionId(null);
     setStepInfo(null);
     setStepDone(false);
+    setStepState("solving"); // Reset state to "solving"
     setShowOriginal(false); // Reset toggle to default
     
     // Focus first cell after state updates
@@ -451,7 +455,10 @@ export default function SolveForm() {
           <div style={{ marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <label style={labelStyle}>
-                {showOriginal ? 'Original Puzzle' : (stepDone ? 'Solved Puzzle' : 'Current Puzzle State')}
+                {showOriginal ? 'Original Puzzle' : 
+                  stepState === 'solved' ? 'Solved Puzzle' :
+                  stepState === 'stuck' ? 'Stuck' :
+                  'Solving Puzzle'}
               </label>
               <button
                 type="button"

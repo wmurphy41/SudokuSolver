@@ -28,7 +28,7 @@ except ImportError:
 Grid = List[List[int]]
 
 
-def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict[str, Any]] = None) -> Tuple[Grid, bool, str, Dict[str, Any]]:
+def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict[str, Any]] = None) -> Tuple[Grid, str, str, Dict[str, Any]]:
     """
     Apply a single logical solving step using SudokuSolver.
     
@@ -37,8 +37,7 @@ def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict
     - Otherwise, create a SudokuSolver from the grid using the given debug level.
     - Redirect stdout to a buffer while running step_solve().
     - If the buffer contains any text, use that as the message.
-    - Otherwise, if step_solve returned True, message = "Solved".
-      If it returned False, message = "In Progress".
+    - Otherwise, derive message from the state returned by step_solve().
     
     Args:
         grid: 9x9 grid of integers (used only if solver_state is None)
@@ -47,12 +46,12 @@ def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict
     
     Returns:
         new_grid: updated 9x9 grid of integers
-        success: flag returned from step_solve() (True if puzzle solved)
+        state: solving state ("solving", "solved", or "stuck")
         message: log or status message
         solver_state: updated serialized solver state
     """
     buf = io.StringIO()
-    success = False
+    state = "solving"
 
     with redirect_stdout(buf):
         # Restore from state if provided, otherwise create new solver
@@ -61,7 +60,7 @@ def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict
         else:
             solver = SudokuSolver(grid, debug_level=debug_level)
         
-        success = solver.step_solve()
+        state = solver.step_solve()
 
     # Capture logs from stdout
     logs = buf.getvalue()
@@ -70,7 +69,13 @@ def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict
     if logs_stripped:
         message = logs
     else:
-        message = "Solved" if success else "In Progress"
+        # Fallback messages based on state
+        if state == "solved":
+            message = "Solved"
+        elif state == "stuck":
+            message = "No progress made in this step"
+        else:
+            message = "In Progress"
 
     # Extract updated grid from solver
     new_grid: Grid = []
@@ -84,5 +89,5 @@ def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict
     # Extract full solver state for persistence
     updated_solver_state = solver.to_dict()
 
-    return new_grid, success, message, updated_solver_state
+    return new_grid, state, message, updated_solver_state
 

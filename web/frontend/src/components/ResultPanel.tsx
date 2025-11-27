@@ -81,7 +81,7 @@ export default function ResultPanel({ result, validationError, networkError, ori
           <div aria-label={showOriginal ? "Original puzzle grid" : "Attempted solution grid"}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <div className="solution-label">
-                {showOriginal ? 'Original Puzzle:' : 'Attempted Solution:'}
+                {showOriginal ? 'Original Puzzle:' : 'Stuck:'}
               </div>
               {onToggleShowOriginal && (
                 <button

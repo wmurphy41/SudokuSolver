@@ -10,7 +10,7 @@ Main Sudoku solving logic implementing multiple solving techniques including:
 Author: Improved version with better Python practices
 """
 
-from typing import List, Set, Iterator
+from typing import List, Set, Iterator, Literal
 from sudoku_models import SudokuCell, SudokuError, SolvingMetrics
 
 
@@ -253,12 +253,14 @@ class SudokuSolver:
         self._print_solution_summary(initial_empty, solved)
         return solved
     
-    def step_solve(self) -> bool:
+    def step_solve(self) -> Literal["solving", "solved", "stuck"]:
         """
         Perform one pass through all solving techniques without looping.
         
         Returns:
-            True if puzzle is solved after this step, False otherwise
+            "solved" if puzzle is solved after this step
+            "stuck" if no progress was made (cells filled = 0 and candidates pruned = 0)
+            "solving" otherwise (progress was made but puzzle not yet solved)
         """
         self._debug_print(1, "Performing one solving step...")
         self.print_grid(False)
@@ -287,14 +289,15 @@ class SudokuSolver:
         if solved:
             self._debug_print(1, "Puzzle is now solved!")
             self._print_solution_summary(0, solved)  # Pass 0 for initial_empty since we don't track it in step mode
+            return "solved"
         elif cells_filled == 0 and candidates_pruned == 0:
             self._debug_print(2, "No progress made in this step")
+            return "stuck"
         else:
             self._debug_print(1, "Progress made in this step.  Resulting puzzle:")
             self.print_grid(False)
             self._debug_print(2, f"Step completed: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
-        
-        return solved
+            return "solving"
     
     def _fill_naked_singles(self) -> int:
         """Fill cells that have only one candidate."""

@@ -127,6 +127,7 @@ class StepResponse(BaseModel):
     solution: Optional[Grid]
     success: bool
     message: str
+    state: str  # "solving", "solved", or "stuck"
 
 
 def _to_int_grid(solver: SudokuSolver) -> Grid:
@@ -250,6 +251,7 @@ async def create_session(payload: StepSessionCreate) -> Dict[str, str]:
             "grid": payload.grid,
             "debug_level": payload.debug_level,
             "solver_state": solver_state,
+            "state": "solving",  # Initial state is "solving"
         }
         r.set(f"sudoku:session:{session_id}", json.dumps(data))
         return {"session_id": session_id}
@@ -290,22 +292,27 @@ async def step_session(session_id: str) -> StepResponse:
     debug_level: int = int(data.get("debug_level", 0))
     solver_state = data.get("solver_state")  # May be None for old sessions
 
-    # New apply_one_step signature: (grid, success, message, solver_state)
+    # apply_one_step signature: (grid, state, message, solver_state)
     # Pass solver_state if available, otherwise use grid (backward compatible)
-    new_grid, success, message, updated_solver_state = apply_one_step(
+    new_grid, state, message, updated_solver_state = apply_one_step(
         grid, debug_level, solver_state
     )
 
-    # Persist updated grid and solver state back into the session
+    # Persist updated grid, state, and solver state back into the session
     data["grid"] = new_grid
+    data["state"] = state
     data["solver_state"] = updated_solver_state
     r.set(f"sudoku:session:{session_id}", json.dumps(data))
+
+    # Determine success flag from state
+    success = state == "solved"
 
     # For step mode, always return the updated grid as the "solution"
     return StepResponse(
         solution=new_grid,
         success=success,
         message=message,
+        state=state,
     )
 
 @app.delete("/api/sessions/{session_id}")

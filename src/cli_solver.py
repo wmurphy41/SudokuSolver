@@ -120,11 +120,11 @@ Examples:
             while solver.count_empty_cells() > 0:
                 step_count += 1
                 input(f"\nPress Enter for step {step_count}...")
-                solved = solver.step_solve()
-                if solved:
+                state = solver.step_solve()
+                if state == "solved":
                     print("\nPuzzle solved!")
                     break
-                elif solver.count_empty_cells() == len([c for row in grid for c in row if c == 0]):
+                elif state == "stuck":
                     print("\nNo progress - puzzle may be unsolvable with current techniques")
                     break
         else:
