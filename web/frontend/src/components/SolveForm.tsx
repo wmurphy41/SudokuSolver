@@ -51,6 +51,9 @@ export default function SolveForm() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [stepInfo, setStepInfo] = useState<StepInfo | null>(null);
   const [stepDone, setStepDone] = useState<boolean>(false);
+  
+  // Toggle state for showing original puzzle
+  const [showOriginal, setShowOriginal] = useState<boolean>(false);
 
   /**
    * Load a sample puzzle or clear the grid
@@ -88,9 +91,10 @@ export default function SolveForm() {
     if (solveMode === 'step') {
       setLoading(true);
       setResult(null);
-      setOriginalGrid(null);
+      setOriginalGrid(grid.map(row => [...row])); // Deep copy for step mode
       setStepInfo(null);
       setStepDone(false);
+      setShowOriginal(false); // Reset toggle to default
 
       try {
         const session = await createSession(grid, debugLevel);
@@ -113,6 +117,7 @@ export default function SolveForm() {
     try {
       // Store the original grid for display
       setOriginalGrid(grid.map(row => [...row])); // Deep copy
+      setShowOriginal(false); // Reset toggle to default
       
       // Call API with structured grid and debug level
       const response = await solve({ grid, debug_level: debugLevel });
@@ -156,6 +161,10 @@ export default function SolveForm() {
       });
       // Use success flag as done flag
       setStepDone(response.success);
+      // If Show Original is ON, switch it OFF when taking a step
+      if (showOriginal) {
+        setShowOriginal(false);
+      }
     } catch (err) {
       setNetworkError(err instanceof Error ? err.message : 'Failed to apply next step');
       setStepInfo(null);
@@ -188,6 +197,7 @@ export default function SolveForm() {
     setSessionId(null);
     setStepInfo(null);
     setStepDone(false);
+    setShowOriginal(false); // Reset toggle to default
     
     // Focus first cell after state updates
     requestAnimationFrame(() => {
@@ -414,7 +424,9 @@ export default function SolveForm() {
             result={result} 
             validationError={validationError}
             networkError={networkError}
-            originalGrid={originalGrid} 
+            originalGrid={originalGrid}
+            showOriginal={showOriginal}
+            onToggleShowOriginal={() => setShowOriginal(!showOriginal)}
           />
           <div style={{ marginTop: '16px' }}>
             <button
@@ -437,10 +449,32 @@ export default function SolveForm() {
       {mode === 'result' && solveMode === 'step' && (
         <>
           <div style={{ marginBottom: '16px' }}>
-            <label style={labelStyle}>Current Puzzle State</label>
-            {grid && grid.length === 9 ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={labelStyle}>
+                {showOriginal ? 'Original Puzzle' : (stepDone ? 'Solved Puzzle' : 'Current Puzzle State')}
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowOriginal(!showOriginal)}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  color: showOriginal ? 'white' : '#007bff',
+                  backgroundColor: showOriginal ? '#007bff' : 'white',
+                  border: '1px solid #007bff',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {showOriginal ? 'Show Original ✓' : 'Show Original'}
+              </button>
+            </div>
+            {(showOriginal && originalGrid ? originalGrid : grid) && 
+             (showOriginal && originalGrid ? originalGrid.length === 9 : grid.length === 9) ? (
               <EditableGrid
-                value={grid}
+                value={showOriginal && originalGrid ? originalGrid : grid}
                 onChange={() => {}}
                 disabled={true}
               />

@@ -12,12 +12,14 @@ interface ResultPanelProps {
   validationError?: string | null;
   networkError?: string | null;
   originalGrid?: Grid | null;
+  showOriginal?: boolean;
+  onToggleShowOriginal?: () => void;
 }
 
 /**
  * Helper function to render a 9x9 grid as an HTML table
  */
-function renderGridTable(grid: Grid): JSX.Element {
+function renderGridTable(grid: Grid) {
   return (
     <div className="grid-card">
       <table className="sudoku-grid solution-grid">
@@ -40,18 +42,11 @@ function renderGridTable(grid: Grid): JSX.Element {
   );
 }
 
-export default function ResultPanel({ result, validationError, networkError, originalGrid }: ResultPanelProps) {
+export default function ResultPanel({ result, validationError, networkError, originalGrid, showOriginal = false, onToggleShowOriginal }: ResultPanelProps) {
   // CONDITION 1: Validation Error (Invalid Input Data)
   if (validationError) {
     return (
       <div className="result-panel">
-        {/* Status badge - invalid data */}
-        <div className="status-badge status-invalid" role="status" aria-live="polite">
-          Invalid Data
-        </div>
-
-        {/* NO GRIDS DISPLAYED */}
-
         {/* Validation error message box */}
         <div className="message-box" aria-label="Validation error message">
           <div className="message-label">Validation Error:</div>
@@ -67,11 +62,6 @@ export default function ResultPanel({ result, validationError, networkError, ori
   if (networkError) {
     return (
       <div className="result-panel">
-        {/* Status badge - network error */}
-        <div className="status-badge status-fail" role="status" aria-live="polite">
-          Network Error
-        </div>
-
         {/* Network error message box */}
         <div className="message-box" aria-label="Network error message">
           <div className="message-label">Error:</div>
@@ -87,15 +77,33 @@ export default function ResultPanel({ result, validationError, networkError, ori
   if (result && !result.success) {
     return (
       <div className="result-panel">
-        {/* Status badge - solver failure */}
-        <div className="status-badge status-fail" role="status" aria-live="polite">
-          Fail
-        </div>
-
-        {result.solution && (
-          <div aria-label="Attempted solution grid">
-            <div className="solution-label">Attempted Solution:</div>
-            {renderGridTable(result.solution)}
+        {(showOriginal ? originalGrid : result.solution) && (
+          <div aria-label={showOriginal ? "Original puzzle grid" : "Attempted solution grid"}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div className="solution-label">
+                {showOriginal ? 'Original Puzzle:' : 'Attempted Solution:'}
+              </div>
+              {onToggleShowOriginal && (
+                <button
+                  type="button"
+                  onClick={onToggleShowOriginal}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    color: showOriginal ? 'white' : '#007bff',
+                    backgroundColor: showOriginal ? '#007bff' : 'white',
+                    border: '1px solid #007bff',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {showOriginal ? 'Show Original ✓' : 'Show Original'}
+                </button>
+              )}
+            </div>
+            {renderGridTable(showOriginal && originalGrid ? originalGrid : result.solution!)}
           </div>
         )}
 
@@ -114,16 +122,34 @@ export default function ResultPanel({ result, validationError, networkError, ori
   if (result && result.success) {
     return (
       <div className="result-panel">
-        {/* Status badge - success */}
-        <div className="status-badge status-success" role="status" aria-live="polite">
-          Success
-        </div>
-
         {/* Solution grid */}
-        {result.solution && (
-          <div aria-label="Solved puzzle grid">
-            <div className="solution-label">Solution Grid:</div>
-            {renderGridTable(result.solution)}
+        {(showOriginal ? originalGrid : result.solution) && (
+          <div aria-label={showOriginal ? "Original puzzle grid" : "Solved puzzle grid"}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div className="solution-label">
+                {showOriginal ? 'Original Puzzle:' : 'Solved Puzzle:'}
+              </div>
+              {onToggleShowOriginal && (
+                <button
+                  type="button"
+                  onClick={onToggleShowOriginal}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    color: showOriginal ? 'white' : '#007bff',
+                    backgroundColor: showOriginal ? '#007bff' : 'white',
+                    border: '1px solid #007bff',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {showOriginal ? 'Show Original ✓' : 'Show Original'}
+                </button>
+              )}
+            </div>
+            {renderGridTable(showOriginal && originalGrid ? originalGrid : result.solution!)}
           </div>
         )}
 
