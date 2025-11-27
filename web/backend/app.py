@@ -13,7 +13,7 @@ import uuid
 from contextlib import redirect_stdout
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, field_validator
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import redis
 
 # Import the SudokuSolver engine
@@ -223,7 +223,7 @@ async def solve_sudoku(request: SolveRequest) -> SolveResponse:
 
 # Session endpoints for step-wise solving
 @app.post("/api/sessions")
-async def create_session(payload: StepSessionCreate) -> Dict[str, str]:
+async def create_session(payload: StepSessionCreate) -> Dict[str, Any]:
     """
     Create a new step-wise solving session.
     
@@ -231,7 +231,7 @@ async def create_session(payload: StepSessionCreate) -> Dict[str, str]:
         payload: StepSessionCreate containing 9x9 grid and debug level
         
     Returns:
-        Dict containing session_id
+        Dict containing session_id and initial candidates
     """
     try:
         r = get_redis()
@@ -259,6 +259,7 @@ async def create_session(payload: StepSessionCreate) -> Dict[str, str]:
         # Create initial solver to get state with candidates initialized
         solver = SudokuSolver(payload.grid, debug_level=payload.debug_level)
         solver_state = solver.to_dict()
+        initial_candidates = solver.get_candidate_grid()
         
         data = {
             "grid": payload.grid,
@@ -267,7 +268,10 @@ async def create_session(payload: StepSessionCreate) -> Dict[str, str]:
             "state": "solving",  # Initial state is "solving"
         }
         r.set(f"sudoku:session:{session_id}", json.dumps(data))
-        return {"session_id": session_id}
+        return {
+            "session_id": session_id,
+            "candidates": initial_candidates
+        }
     except redis.RedisError as e:
         raise HTTPException(
             status_code=500,

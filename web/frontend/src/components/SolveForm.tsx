@@ -105,6 +105,10 @@ export default function SolveForm() {
       try {
         const session = await createSession(grid, debugLevel);
         setSessionId(session.session_id);
+        // Store initial candidates if provided
+        if (session.candidates) {
+          setStepCandidates(session.candidates);
+        }
         // Go to result view for step mode
         setMode('result');
       } catch (err) {

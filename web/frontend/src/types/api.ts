@@ -90,8 +90,10 @@ export interface StepResponse {
  * Response from session creation endpoint
  * 
  * @property session_id - Unique identifier for the session
+ * @property candidates - Initial candidate grid from the solver (optional)
  */
 export interface SessionCreateResponse {
   session_id: string;
+  candidates?: CandidateGrid | null;
 }
 
