@@ -95,6 +95,9 @@ function formatStepStatusMessage(
   if (stepChangeRecord) {
     const cellsFilled = stepChangeRecord.cells_filled.length;
     const candidatesPruned = stepChangeRecord.candidates_pruned.length;
+    if (cellsFilled === 0 && candidatesPruned === 0) {
+      return `Solving Status: In Progress\nRan ${stepChangeRecord.technique} rule: attempted but nothing found.`;
+    }
     return `Solving Status: In Progress\nRan ${stepChangeRecord.technique} rule: ${cellsFilled} cells filled, ${candidatesPruned} candidates pruned`;
   }
   return "Solving Status: In Progress";

@@ -388,8 +388,8 @@ async def step_session(session_id: str) -> StepResponse:
             message = formatted_change
 
     # For step mode, always return the updated grid as the "solution"
-    # Include change record as a list with single item
-    changes_list = [change_record] if change_record and (change_record.get("cells_filled") or change_record.get("candidates_pruned")) else None
+    # Always include change record as a list with single item (even if empty) so technique name is available
+    changes_list = [change_record] if change_record else None
     
     return StepResponse(
         solution=new_grid,
