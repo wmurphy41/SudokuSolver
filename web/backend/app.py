@@ -89,6 +89,7 @@ class SolveResponse(BaseModel):
     success: bool
     message: str
     candidates: Optional[CandidateGrid] = None
+    changes: Optional[List[Dict[str, Any]]] = None  # List of all change records
 
 # Session models for step-wise solving
 class StepSessionCreate(BaseModel):
@@ -131,7 +132,45 @@ class StepResponse(BaseModel):
     message: str
     state: str  # "solving", "solved", or "stuck"
     candidates: Optional[CandidateGrid] = None  # Candidate lists for each cell
+    changes: Optional[List[Dict[str, Any]]] = None  # List with single change record for this step
 
+
+def _format_changes(changes: List[Dict[str, Any]]) -> str:
+    """
+    Format a list of change records into a human-readable message.
+    
+    Args:
+        changes: List of change records, each with technique, cells_filled, candidates_pruned
+    
+    Returns:
+        Formatted string describing the changes
+    """
+    if not changes:
+        return "No changes made."
+    
+    parts = []
+    for change in changes:
+        technique = change.get("technique", "Unknown technique")
+        cells_filled = change.get("cells_filled", [])
+        candidates_pruned = change.get("candidates_pruned", [])
+        
+        change_desc = f"{technique}: "
+        if cells_filled:
+            filled_list = [f"{cf['value']} at ({cf['row']},{cf['col']})" for cf in cells_filled]
+            filled_str = ", ".join(filled_list)
+            change_desc += f"Filled {len(cells_filled)} cell(s) ({filled_str}). "
+        if candidates_pruned:
+            pruned_list = [f"{cp['value']} from ({cp['row']},{cp['col']})" for cp in candidates_pruned[:10]]
+            pruned_str = ", ".join(pruned_list)
+            if len(candidates_pruned) > 10:
+                pruned_str += f" and {len(candidates_pruned) - 10} more"
+            change_desc += f"Pruned {len(candidates_pruned)} candidate(s) ({pruned_str})."
+        if not cells_filled and not candidates_pruned:
+            change_desc += "No changes."
+        
+        parts.append(change_desc)
+    
+    return "\n".join(parts)
 
 def _to_int_grid(solver: SudokuSolver) -> Grid:
     """
@@ -204,11 +243,27 @@ async def solve_sudoku(request: SolveRequest) -> SolveResponse:
         # Get captured output
         message = log_buf.getvalue() or ""
         
+        # Get change history from solver
+        change_history = []
+        try:
+            change_history = solver.get_change_history()
+        except Exception:
+            change_history = []
+        
+        # Append formatted changes to message if available
+        if change_history:
+            formatted_changes = _format_changes(change_history)
+            if message:
+                message = message + "\n\n" + formatted_changes
+            else:
+                message = formatted_changes
+        
         return SolveResponse(
             solution=solution_grid,  # Return grid even on failure to show progress
             success=bool(ok),
             message=message if message else ("Solved" if ok else "Unsolved or invalid"),
             candidates=candidate_grid,
+            changes=change_history if change_history else None,
         )
         
     except Exception as e:
@@ -309,9 +364,9 @@ async def step_session(session_id: str) -> StepResponse:
     debug_level: int = int(data.get("debug_level", 0))
     solver_state = data.get("solver_state")  # May be None for old sessions
 
-    # apply_one_step signature: (grid, state, message, solver_state, candidates)
+    # apply_one_step signature: (grid, state, message, solver_state, candidates, change_record)
     # Pass solver_state if available, otherwise use grid (backward compatible)
-    new_grid, state, message, updated_solver_state, candidate_grid = apply_one_step(
+    new_grid, state, message, updated_solver_state, candidate_grid, change_record = apply_one_step(
         grid, debug_level, solver_state
     )
 
@@ -323,14 +378,26 @@ async def step_session(session_id: str) -> StepResponse:
 
     # Determine success flag from state
     success = state == "solved"
+    
+    # Format change record into message if available
+    if change_record and (change_record.get("cells_filled") or change_record.get("candidates_pruned")):
+        formatted_change = _format_changes([change_record])
+        if message:
+            message = message + "\n\n" + formatted_change
+        else:
+            message = formatted_change
 
     # For step mode, always return the updated grid as the "solution"
+    # Include change record as a list with single item
+    changes_list = [change_record] if change_record and (change_record.get("cells_filled") or change_record.get("candidates_pruned")) else None
+    
     return StepResponse(
         solution=new_grid,
         success=success,
         message=message,
         state=state,
         candidates=candidate_grid,
+        changes=changes_list,
     )
 
 @app.delete("/api/sessions/{session_id}")

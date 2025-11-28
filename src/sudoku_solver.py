@@ -10,7 +10,7 @@ Main Sudoku solving logic implementing multiple solving techniques including:
 Author: Improved version with better Python practices
 """
 
-from typing import List, Set, Iterator, Literal
+from typing import List, Set, Iterator, Literal, Optional, Tuple, Dict, Any
 from sudoku_models import SudokuCell, SudokuError, SolvingMetrics
 
 
@@ -52,6 +52,10 @@ class SudokuSolver:
         
         # Track if any changes were made in the current pass through all techniques
         self._changes_made_in_current_pass = False
+        
+        # Change tracking infrastructure
+        self._change_history: List[Dict[str, Any]] = []  # List of all change records
+        self._current_change_record: Optional[Dict[str, Any]] = None  # Changes during current technique call
         
         self._validate_puzzle(puzzle)
         self._load_puzzle(puzzle)
@@ -157,7 +161,8 @@ class SudokuSolver:
             "grid": grid_data,
             "debug_level": self.debug_level,
             "current_technique_index": self._current_technique_index,
-            "changes_made_in_current_pass": self._changes_made_in_current_pass
+            "changes_made_in_current_pass": self._changes_made_in_current_pass,
+            "change_history": self._change_history.copy() if self._change_history else []
         }
     
     @classmethod
@@ -175,6 +180,7 @@ class SudokuSolver:
         grid_data = data["grid"]
         current_technique_index = data.get("current_technique_index", 0)
         changes_made_in_current_pass = data.get("changes_made_in_current_pass", False)
+        change_history = data.get("change_history", [])
         
         # Create a solver instance (we'll bypass normal initialization)
         solver = cls.__new__(cls)
@@ -183,6 +189,8 @@ class SudokuSolver:
         solver.grid = []
         solver._current_technique_index = current_technique_index
         solver._changes_made_in_current_pass = changes_made_in_current_pass
+        solver._change_history = change_history.copy() if change_history else []
+        solver._current_change_record = None
         
         # Restore grid with values and candidates
         for row_idx, row_data in enumerate(grid_data):
@@ -215,6 +223,26 @@ class SudokuSolver:
                     row_data.append([])
             candidate_grid.append(row_data)
         return candidate_grid
+    
+    def get_change_history(self) -> List[Dict[str, Any]]:
+        """
+        Get the complete list of all change records made during solving.
+        
+        Returns:
+            List of change records, each containing technique, cells_filled, and candidates_pruned
+        """
+        return self._change_history.copy()
+    
+    def get_last_change(self) -> Optional[Dict[str, Any]]:
+        """
+        Get the most recent change record.
+        
+        Returns:
+            The last change record, or None if no changes have been made
+        """
+        if self._change_history:
+            return self._change_history[-1].copy()
+        return None
     
     def count_empty_cells(self) -> int:
         """Count the number of empty cells remaining."""
@@ -264,6 +292,8 @@ class SudokuSolver:
         
         self.metrics.reset()
         initial_empty = self.count_empty_cells()
+        # Initialize change history for full solve
+        self._change_history = []
         
         while self.count_empty_cells() > 0:
             self.metrics.solve_loops += 1
@@ -272,15 +302,69 @@ class SudokuSolver:
             cells_filled = 0
             candidates_pruned = 0
             
+            # Track changes for this loop iteration
+            loop_change_records = []
+            
             # Try to fill cells
+            # Track changes for naked singles
+            self._current_change_record = {
+                "technique": "Fill Naked Singles",
+                "cells_filled": [],
+                "candidates_pruned": []
+            }
             cells_filled += self._fill_naked_singles()
+            if len(self._current_change_record["cells_filled"]) > 0 or len(self._current_change_record["candidates_pruned"]) > 0:
+                loop_change_records.append(self._current_change_record.copy())
+            self._current_change_record = None
+            
+            # Track changes for hidden singles
+            self._current_change_record = {
+                "technique": "Fill Hidden Singles",
+                "cells_filled": [],
+                "candidates_pruned": []
+            }
             cells_filled += self._fill_hidden_singles()
+            if len(self._current_change_record["cells_filled"]) > 0 or len(self._current_change_record["candidates_pruned"]) > 0:
+                loop_change_records.append(self._current_change_record.copy())
+            self._current_change_record = None
             
             # If no cells filled, try pruning candidates
             if cells_filled == 0:
+                # Track changes for intersection removal
+                self._current_change_record = {
+                    "technique": "Prune Intersection Removal",
+                    "cells_filled": [],
+                    "candidates_pruned": []
+                }
                 candidates_pruned += self._prune_intersection_removal()
+                if len(self._current_change_record["cells_filled"]) > 0 or len(self._current_change_record["candidates_pruned"]) > 0:
+                    loop_change_records.append(self._current_change_record.copy())
+                self._current_change_record = None
+                
+                # Track changes for naked groups
+                self._current_change_record = {
+                    "technique": "Prune Naked Groups",
+                    "cells_filled": [],
+                    "candidates_pruned": []
+                }
                 candidates_pruned += self._prune_naked_groups()
+                if len(self._current_change_record["cells_filled"]) > 0 or len(self._current_change_record["candidates_pruned"]) > 0:
+                    loop_change_records.append(self._current_change_record.copy())
+                self._current_change_record = None
+                
+                # Track changes for hidden groups
+                self._current_change_record = {
+                    "technique": "Prune Hidden Groups",
+                    "cells_filled": [],
+                    "candidates_pruned": []
+                }
                 candidates_pruned += self._prune_hidden_groups()
+                if len(self._current_change_record["cells_filled"]) > 0 or len(self._current_change_record["candidates_pruned"]) > 0:
+                    loop_change_records.append(self._current_change_record.copy())
+                self._current_change_record = None
+            
+            # Add all change records from this loop to history
+            self._change_history.extend(loop_change_records)
             
             # If no progress made, puzzle is unsolvable with current techniques
             if cells_filled == 0 and candidates_pruned == 0:
@@ -291,7 +375,7 @@ class SudokuSolver:
         self._print_solution_summary(initial_empty, solved)
         return solved
     
-    def step_solve(self) -> Literal["solving", "solved", "stuck"]:
+    def step_solve(self) -> Tuple[Literal["solving", "solved", "stuck"], Dict[str, Any]]:
         """
         Perform a single solving technique and return the results.
         Cycles through techniques, calling one per invocation.
@@ -299,9 +383,11 @@ class SudokuSolver:
         Tracks if any changes were made during a complete pass through all techniques.
         
         Returns:
-            "solved" if puzzle is solved after this step
-            "stuck" if no progress was made during a complete pass through all techniques
-            "solving" otherwise (progress was made but puzzle not yet solved)
+            Tuple of (state, change_record) where:
+            - state is "solved" if puzzle is solved after this step,
+              "stuck" if no progress was made during a complete pass through all techniques,
+              "solving" otherwise (progress was made but puzzle not yet solved)
+            - change_record is a dict with technique name, cells_filled, and candidates_pruned
         """
         self._debug_print(1, "Performing one solving step...")
         self.print_grid(False)
@@ -320,6 +406,13 @@ class SudokuSolver:
         
         self._debug_print(1, f"Applying technique: {technique_desc}")
         
+        # Initialize change record for this technique call
+        self._current_change_record = {
+            "technique": technique_desc,
+            "cells_filled": [],
+            "candidates_pruned": []
+        }
+        
         # Apply the technique
         cells_filled = 0
         candidates_pruned = 0
@@ -328,6 +421,20 @@ class SudokuSolver:
             cells_filled = technique_method()
         elif technique_name.startswith('_prune_'):
             candidates_pruned = technique_method()
+        
+        # Create change record (even if empty)
+        change_record = {
+            "technique": technique_desc,
+            "cells_filled": self._current_change_record["cells_filled"].copy(),
+            "candidates_pruned": self._current_change_record["candidates_pruned"].copy()
+        }
+        
+        # Add to history if there are changes
+        if len(change_record["cells_filled"]) > 0 or len(change_record["candidates_pruned"]) > 0:
+            self._change_history.append(change_record)
+        
+        # Clear current change record
+        self._current_change_record = None
         
         # Track if any changes were made in this step
         if cells_filled > 0 or candidates_pruned > 0:
@@ -346,25 +453,25 @@ class SudokuSolver:
             self._print_solution_summary(0, solved)  # Pass 0 for initial_empty since we don't track it in step mode
             # Move to next technique for next call before returning
             self._current_technique_index = (self._current_technique_index + 1) % len(self.SOLVING_TECHNIQUES)
-            return "solved"
+            return ("solved", change_record)
         elif is_last_technique and not self._changes_made_in_current_pass:
             # Last technique and no changes made during the entire pass
             self._debug_print(2, "No progress made during complete pass through all techniques")
             # Move to next technique for next call (will cycle back to 0)
             self._current_technique_index = (self._current_technique_index + 1) % len(self.SOLVING_TECHNIQUES)
-            return "stuck"
+            return ("stuck", change_record)
         elif cells_filled == 0 and candidates_pruned == 0:
             self._debug_print(2, "No progress made in this step")
             # Move to next technique for next call
             self._current_technique_index = (self._current_technique_index + 1) % len(self.SOLVING_TECHNIQUES)
-            return "solving"
+            return ("solving", change_record)
         else:
             self._debug_print(1, "Progress made in this step.  Resulting puzzle:")
             self.print_grid(False)
             self._debug_print(2, f"Step completed: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
             # Move to next technique for next call
             self._current_technique_index = (self._current_technique_index + 1) % len(self.SOLVING_TECHNIQUES)
-            return "solving"
+            return ("solving", change_record)
 
     def one_pass_solve(self) -> Literal["solving", "solved", "stuck"]:
         """
@@ -463,23 +570,49 @@ class SudokuSolver:
         
         return filled_count
     
+    def _record_candidate_pruned(self, cell: SudokuCell, candidate: int) -> None:
+        """
+        Record a candidate being pruned in the current change record.
+        
+        Args:
+            cell: The cell from which the candidate was removed
+            candidate: The candidate value that was removed
+        """
+        if self._current_change_record is not None:
+            self._current_change_record["candidates_pruned"].append({
+                "row": cell.row,
+                "col": cell.col,
+                "value": candidate
+            })
+    
     def _fill_cell(self, cell: SudokuCell, value: int) -> None:
         """Fill a cell with a value and update constraints."""
         cell.set_value(value)
         self._debug_print(2, f"Filled {value} at ({cell.row}, {cell.col})")
         
+        # Record cell fill in current change record
+        if self._current_change_record is not None:
+            self._current_change_record["cells_filled"].append({
+                "row": cell.row,
+                "col": cell.col,
+                "value": value
+            })
+        
         # Remove value from candidates in same block, row, and column
         for other_cell in self._iterate_block(cell.block):
             if other_cell != cell:
-                other_cell.remove_candidate(value)
+                if other_cell.remove_candidate(value):
+                    self._record_candidate_pruned(other_cell, value)
         
         for other_cell in self._iterate_row(cell.row):
             if other_cell != cell:
-                other_cell.remove_candidate(value)
+                if other_cell.remove_candidate(value):
+                    self._record_candidate_pruned(other_cell, value)
         
         for other_cell in self._iterate_col(cell.col):
             if other_cell != cell:
-                other_cell.remove_candidate(value)
+                if other_cell.remove_candidate(value):
+                    self._record_candidate_pruned(other_cell, value)
     
     def _prune_intersection_removal(self) -> int:
         """Apply intersection removal techniques."""
@@ -549,24 +682,27 @@ class SudokuSolver:
                 row = cells[0].row
                 for cell in self._iterate_row(row):
                     if cell not in cells and value in cell.candidates:
-                        cell.remove_candidate(value)
-                        pruned_count += 1
+                        if cell.remove_candidate(value):
+                            self._record_candidate_pruned(cell, value)
+                            pruned_count += 1
             
             # If all cells are in same column, remove from other cells in that column
             elif len({cell.col for cell in cells}) == 1:
                 col = cells[0].col
                 for cell in self._iterate_col(col):
                     if cell not in cells and value in cell.candidates:
-                        cell.remove_candidate(value)
-                        pruned_count += 1
+                        if cell.remove_candidate(value):
+                            self._record_candidate_pruned(cell, value)
+                            pruned_count += 1
         
         else:  # row or column
             # Remove from other cells in the same block
             block = cells[0].block
             for cell in self._iterate_block(block):
                 if cell not in cells and value in cell.candidates:
-                    cell.remove_candidate(value)
-                    pruned_count += 1
+                    if cell.remove_candidate(value):
+                        self._record_candidate_pruned(cell, value)
+                        pruned_count += 1
         
         return pruned_count
     
@@ -633,9 +769,12 @@ class SudokuSolver:
         
         for cell in cells:
             if cell not in naked_group:
-                original_size = len(cell.candidates)
+                original_candidates = cell.candidates.copy()
                 cell.candidates -= group_candidates
-                pruned_count += original_size - len(cell.candidates)
+                # Record each pruned candidate
+                for candidate in original_candidates - cell.candidates:
+                    self._record_candidate_pruned(cell, candidate)
+                pruned_count += len(original_candidates - cell.candidates)
         
         return pruned_count
     

@@ -22,6 +22,24 @@ export type Grid = number[][];
 export type CandidateGrid = number[][][];
 
 /**
+ * Represents a single cell change (fill or prune)
+ */
+export interface CellChange {
+  row: number;
+  col: number;
+  value: number;
+}
+
+/**
+ * Change record for a single solving technique application
+ */
+export interface ChangeRecord {
+  technique: string;
+  cells_filled: CellChange[];
+  candidates_pruned: CellChange[];
+}
+
+/**
  * Request payload for solving a sudoku puzzle
  * 
  * @property grid - 9x9 grid of integers (0 = empty, 1-9 = filled)
@@ -44,6 +62,7 @@ export interface SolveResponse {
   success: boolean;
   message: string;
   candidates?: CandidateGrid | null;
+  changes?: ChangeRecord[] | null;
 }
 
 /**
@@ -84,6 +103,7 @@ export interface StepResponse {
   message: string;
   state: "solving" | "solved" | "stuck";
   candidates?: CandidateGrid | null;
+  changes?: ChangeRecord[] | null;
 }
 
 /**

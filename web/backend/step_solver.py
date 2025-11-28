@@ -28,7 +28,7 @@ except ImportError:
 Grid = List[List[int]]
 
 
-def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict[str, Any]] = None) -> Tuple[Grid, str, str, Dict[str, Any], List[List[List[int]]]]:
+def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict[str, Any]] = None) -> Tuple[Grid, str, str, Dict[str, Any], List[List[List[int]]], Dict[str, Any]]:
     """
     Apply a single logical solving step using SudokuSolver.
     
@@ -50,9 +50,11 @@ def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict
         message: log or status message
         solver_state: updated serialized solver state
         candidates: 9x9 grid of candidate lists for each cell
+        change_record: dict containing technique, cells_filled, and candidates_pruned
     """
     buf = io.StringIO()
     state = "solving"
+    change_record: Dict[str, Any] = {}
 
     with redirect_stdout(buf):
         # Restore from state if provided, otherwise create new solver
@@ -61,7 +63,7 @@ def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict
         else:
             solver = SudokuSolver(grid, debug_level=debug_level)
         
-        state = solver.step_solve()
+        state, change_record = solver.step_solve()
 
     # Capture logs from stdout
     logs = buf.getvalue()
@@ -91,5 +93,5 @@ def apply_one_step(grid: Grid, debug_level: int = 0, solver_state: Optional[Dict
     updated_solver_state = solver.to_dict()
     candidate_grid = solver.get_candidate_grid()
 
-    return new_grid, state, message, updated_solver_state, candidate_grid
+    return new_grid, state, message, updated_solver_state, candidate_grid, change_record
 

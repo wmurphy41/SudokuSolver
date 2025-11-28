@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { solve, createSession, stepSession, deleteSession } from '../services/api';
-import type { SolveResponse, Grid, StepInfo } from '../types/api';
+import type { SolveResponse, Grid, StepInfo, ChangeRecord } from '../types/api';
 import ResultPanel from './ResultPanel';
 import SolutionGrid from './SolutionGrid';
 import EditableGrid from './EditableGrid';
@@ -37,6 +37,37 @@ const SAMPLE_PUZZLES: Record<string, Grid> = {
 
 // Empty grid for initialization and clear button
 const EMPTY_GRID: Grid = Array.from({ length: 9 }, () => Array(9).fill(0));
+
+/**
+ * Format a change record into a human-readable string
+ */
+function formatChangeRecord(change: ChangeRecord): string {
+  const parts: string[] = [];
+  
+  if (change.cells_filled.length > 0) {
+    const filledStr = change.cells_filled
+      .map(cf => `${cf.value} at (${cf.row},${cf.col})`)
+      .join(', ');
+    parts.push(`Filled ${change.cells_filled.length} cell(s): ${filledStr}`);
+  }
+  
+  if (change.candidates_pruned.length > 0) {
+    const prunedList = change.candidates_pruned.slice(0, 10);
+    const prunedStr = prunedList
+      .map(cp => `${cp.value} from (${cp.row},${cp.col})`)
+      .join(', ');
+    const moreText = change.candidates_pruned.length > 10 
+      ? ` and ${change.candidates_pruned.length - 10} more`
+      : '';
+    parts.push(`Pruned ${change.candidates_pruned.length} candidate(s): ${prunedStr}${moreText}`);
+  }
+  
+  if (parts.length === 0) {
+    return 'No changes made.';
+  }
+  
+  return parts.join('. ');
+}
 
 export default function SolveForm() {
   const [grid, setGrid] = useState<Grid>(EMPTY_GRID);
@@ -162,9 +193,17 @@ export default function SolveForm() {
       if (response.solution) {
         setGrid(response.solution);
       }
-      // Update step info from message (always show message, even if empty)
+      // Update step info - use changes if available, otherwise use message
+      let stepMessage = response.message || 'Step completed';
+      if (response.changes && response.changes.length > 0) {
+        // Format the change record(s) for display
+        const formattedChanges = response.changes.map(change => {
+          return `${change.technique}: ${formatChangeRecord(change)}`;
+        }).join('\n');
+        stepMessage = formattedChanges;
+      }
       setStepInfo({
-        rule: response.message || 'Step completed',
+        rule: stepMessage,
         row: null,
         col: null,
         value: null,
