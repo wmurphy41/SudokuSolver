@@ -537,19 +537,29 @@ export default function SolveForm() {
           </div>
 
           <div className="message-box" aria-label="Step status" style={{ marginBottom: '16px' }}>
-            <div className="message-label">Step Status:</div>
             <div className="message-content">
-              {formatStepStatusMessage(stepState, stepChangeRecord, stepInfo !== null)}
-              {networkError && (
-                <div style={{ color: '#b00020', marginTop: '8px' }}>
-                  {networkError}
-                </div>
-              )}
-              {validationError && (
-                <div style={{ color: '#b00020', marginTop: '8px' }}>
-                  {validationError}
-                </div>
-              )}
+              {(() => {
+                const statusMessage = formatStepStatusMessage(stepState, stepChangeRecord, stepInfo !== null);
+                const messageLines = statusMessage.split('\n');
+                return (
+                  <>
+                    <strong>{messageLines[0]}</strong>
+                    {messageLines.slice(1).map((line, idx) => (
+                      <div key={idx}>{line}</div>
+                    ))}
+                    {networkError && (
+                      <div style={{ color: '#b00020', marginTop: '8px' }}>
+                        {networkError}
+                      </div>
+                    )}
+                    {validationError && (
+                      <div style={{ color: '#b00020', marginTop: '8px' }}>
+                        {validationError}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
 

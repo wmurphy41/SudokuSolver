@@ -58,47 +58,54 @@ export default function ResultPanel({ result, validationError, networkError, ori
 
   // CONDITION 2: Valid Data but Solver Failed (success: false)
   if (result && !result.success) {
+    const statusMessage = formatFullSolveStatusMessage(false);
+    const messageLines = statusMessage.split('\n');
+    
     return (
       <div className="result-panel">
-        {(showOriginal ? originalGrid : result.solution) && (
-          <div aria-label={showOriginal ? "Original puzzle grid" : "Attempted solution grid"}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <div className="solution-label">
-                {showOriginal ? 'Original Puzzle:' : 'Solving Puzzle (Full Solve Mode)'}
+        <div style={{ width: 'fit-content', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          {(showOriginal ? originalGrid : result.solution) && (
+            <div aria-label={showOriginal ? "Original puzzle grid" : "Attempted solution grid"}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div className="solution-label">
+                  {showOriginal ? 'Original Puzzle:' : 'Solving Puzzle (Full Solve Mode)'}
+                </div>
+                {onToggleShowOriginal && (
+                  <button
+                    type="button"
+                    onClick={onToggleShowOriginal}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: showOriginal ? 'white' : '#007bff',
+                      backgroundColor: showOriginal ? '#007bff' : 'white',
+                      border: '1px solid #007bff',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {showOriginal ? 'Show Original ✓' : 'Show Original'}
+                  </button>
+                )}
               </div>
-              {onToggleShowOriginal && (
-                <button
-                  type="button"
-                  onClick={onToggleShowOriginal}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    color: showOriginal ? 'white' : '#007bff',
-                    backgroundColor: showOriginal ? '#007bff' : 'white',
-                    border: '1px solid #007bff',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  {showOriginal ? 'Show Original ✓' : 'Show Original'}
-                </button>
-              )}
+              <SolutionGrid
+                grid={showOriginal && originalGrid ? originalGrid : result.solution!}
+                showCandidates={!showOriginal}
+                candidates={!showOriginal ? result.candidates ?? null : null}
+              />
             </div>
-            <SolutionGrid
-              grid={showOriginal && originalGrid ? originalGrid : result.solution!}
-              showCandidates={!showOriginal}
-              candidates={!showOriginal ? result.candidates ?? null : null}
-            />
-          </div>
-        )}
+          )}
 
-        {/* Solver output message */}
-        <div className="message-box" aria-label="Solver output">
-          <div className="message-label">Solver Output:</div>
-          <div className="message-content">
-            {formatFullSolveStatusMessage(false)}
+          {/* Solver output message */}
+          <div className="message-box" aria-label="Solver output" style={{ width: '100%', marginTop: '16px' }}>
+            <div className="message-content">
+              <strong>{messageLines[0]}</strong>
+              {messageLines.slice(1).map((line, idx) => (
+                <div key={idx}>{line}</div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -107,48 +114,55 @@ export default function ResultPanel({ result, validationError, networkError, ori
 
   // Success case (result.success === true)
   if (result && result.success) {
+    const statusMessage = formatFullSolveStatusMessage(result.success);
+    const messageLines = statusMessage.split('\n');
+    
     return (
       <div className="result-panel">
-        {/* Solution grid */}
-        {(showOriginal ? originalGrid : result.solution) && (
-          <div aria-label={showOriginal ? "Original puzzle grid" : "Solved puzzle grid"}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <div className="solution-label">
-                {showOriginal ? 'Original Puzzle:' : 'Solving Puzzle (Full Solve Mode)'}
+        <div style={{ width: 'fit-content', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          {/* Solution grid */}
+          {(showOriginal ? originalGrid : result.solution) && (
+            <div aria-label={showOriginal ? "Original puzzle grid" : "Solved puzzle grid"}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div className="solution-label">
+                  {showOriginal ? 'Original Puzzle:' : 'Solving Puzzle (Full Solve Mode)'}
+                </div>
+                {onToggleShowOriginal && (
+                  <button
+                    type="button"
+                    onClick={onToggleShowOriginal}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: showOriginal ? 'white' : '#007bff',
+                      backgroundColor: showOriginal ? '#007bff' : 'white',
+                      border: '1px solid #007bff',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {showOriginal ? 'Show Original ✓' : 'Show Original'}
+                  </button>
+                )}
               </div>
-              {onToggleShowOriginal && (
-                <button
-                  type="button"
-                  onClick={onToggleShowOriginal}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    color: showOriginal ? 'white' : '#007bff',
-                    backgroundColor: showOriginal ? '#007bff' : 'white',
-                    border: '1px solid #007bff',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  {showOriginal ? 'Show Original ✓' : 'Show Original'}
-                </button>
-              )}
+              <SolutionGrid
+                grid={showOriginal && originalGrid ? originalGrid : result.solution!}
+                showCandidates={!showOriginal}
+                candidates={!showOriginal ? result.candidates ?? null : null}
+              />
             </div>
-            <SolutionGrid
-              grid={showOriginal && originalGrid ? originalGrid : result.solution!}
-              showCandidates={!showOriginal}
-              candidates={!showOriginal ? result.candidates ?? null : null}
-            />
-          </div>
-        )}
+          )}
 
-        {/* Solver output message */}
-        <div className="message-box" aria-label="Solver output">
-          <div className="message-label">Solver Output:</div>
-          <div className="message-content">
-            {formatFullSolveStatusMessage(result.success)}
+          {/* Solver output message */}
+          <div className="message-box" aria-label="Solver output" style={{ width: '100%', marginTop: '16px' }}>
+            <div className="message-content">
+              <strong>{messageLines[0]}</strong>
+              {messageLines.slice(1).map((line, idx) => (
+                <div key={idx}>{line}</div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

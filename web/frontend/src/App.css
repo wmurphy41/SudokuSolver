@@ -59,6 +59,12 @@
   min-width: min-content;
 }
 
+/* Ensure message-box matches grid-card width when in result-panel container */
+.result-panel > div > .message-box {
+  width: fit-content;
+  align-self: flex-start;
+}
+
 /* Status Badge */
 .status-badge {
   display: inline-block;
