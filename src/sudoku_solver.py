@@ -472,53 +472,7 @@ class SudokuSolver:
             # Move to next technique for next call
             self._current_technique_index = (self._current_technique_index + 1) % len(self.SOLVING_TECHNIQUES)
             return ("solving", change_record)
-
-    def one_pass_solve(self) -> Literal["solving", "solved", "stuck"]:
-        """
-        Perform one pass through all solving techniques without looping.
-        
-        Returns:
-            "solved" if puzzle is solved after this step
-            "stuck" if no progress was made (cells filled = 0 and candidates pruned = 0)
-            "solving" otherwise (progress was made but puzzle not yet solved)
-        """
-        self._debug_print(1, "Performing one solving step...")
-        self.print_grid(False)
-        
-        # Increment solve loop counter for metrics tracking
-        self.metrics.solve_loops += 1
-        self._debug_print(2, f"Solve step: {self.metrics.solve_loops}")
-        
-        cells_filled = 0
-        candidates_pruned = 0
-        
-        # Try to fill cells
-        cells_filled += self._fill_naked_singles()
-        cells_filled += self._fill_hidden_singles()
-        
-        # If no cells filled, try pruning candidates
-        if cells_filled == 0:
-            candidates_pruned += self._prune_intersection_removal()
-            candidates_pruned += self._prune_naked_groups()
-            candidates_pruned += self._prune_hidden_groups()
-        
-        # Check if puzzle is solved
-        solved = self.count_empty_cells() == 0
-        
-        self._debug_print(2, f"Step completed: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
-        if solved:
-            self._debug_print(1, "Puzzle is now solved!")
-            self._print_solution_summary(0, solved)  # Pass 0 for initial_empty since we don't track it in step mode
-            return "solved"
-        elif cells_filled == 0 and candidates_pruned == 0:
-            self._debug_print(2, "No progress made in this step")
-            return "stuck"
-        else:
-            self._debug_print(1, "Progress made in this step.  Resulting puzzle:")
-            self.print_grid(False)
-            self._debug_print(2, f"Step completed: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
-            return "solving"
-   
+    
     def _fill_naked_singles(self) -> int:
         """Fill cells that have only one candidate."""
         self._debug_print(2, "Checking for naked singles...")
