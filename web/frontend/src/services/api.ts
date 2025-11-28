@@ -27,7 +27,7 @@ export async function getHealth(): Promise<Healthz> {
 /**
  * Solve a sudoku puzzle
  * 
- * @param request - Solve request containing 9x9 grid and optional debug_level
+ * @param request - Solve request containing 9x9 grid
  * @returns Promise resolving to solve response with solution grid
  * @throws Error if the request fails
  */
@@ -51,7 +51,7 @@ export async function solve(request: SolveRequest): Promise<SolveResponse> {
  * Create a new step-wise solving session
  * 
  * @param grid - 9x9 grid to start solving
- * @param debug_level - Optional debug level (default: 0)
+ * @param debug_level - Optional debug level (default: 0, not exposed in UI)
  * @returns Promise resolving to session creation response with session_id
  * @throws Error if the request fails
  */

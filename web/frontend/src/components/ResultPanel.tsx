@@ -8,6 +8,14 @@ import SolutionGrid from './SolutionGrid';
  * Shows success/fail status, original puzzle grid, solution grid, and detailed message.
  */
 
+function formatFullSolveStatusMessage(success: boolean): string {
+  if (success) {
+    return "Solving Status: Solved";
+  } else {
+    return "Solving Status: Stuck\nPuzzle may be unsolvable";
+  }
+}
+
 interface ResultPanelProps {
   result: SolveResponse | null;
   validationError?: string | null;
@@ -56,7 +64,7 @@ export default function ResultPanel({ result, validationError, networkError, ori
           <div aria-label={showOriginal ? "Original puzzle grid" : "Attempted solution grid"}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <div className="solution-label">
-                {showOriginal ? 'Original Puzzle:' : 'Stuck:'}
+                {showOriginal ? 'Original Puzzle:' : 'Solving Puzzle (Full Solve Mode)'}
               </div>
               {onToggleShowOriginal && (
                 <button
@@ -90,7 +98,7 @@ export default function ResultPanel({ result, validationError, networkError, ori
         <div className="message-box" aria-label="Solver output">
           <div className="message-label">Solver Output:</div>
           <div className="message-content">
-            {result.message || '(no message)'}
+            {formatFullSolveStatusMessage(false)}
           </div>
         </div>
       </div>
@@ -106,7 +114,7 @@ export default function ResultPanel({ result, validationError, networkError, ori
           <div aria-label={showOriginal ? "Original puzzle grid" : "Solved puzzle grid"}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <div className="solution-label">
-                {showOriginal ? 'Original Puzzle:' : 'Solved Puzzle:'}
+                {showOriginal ? 'Original Puzzle:' : 'Solving Puzzle (Full Solve Mode)'}
               </div>
               {onToggleShowOriginal && (
                 <button
@@ -140,7 +148,7 @@ export default function ResultPanel({ result, validationError, networkError, ori
         <div className="message-box" aria-label="Solver output">
           <div className="message-label">Solver Output:</div>
           <div className="message-content">
-            {result.message || '(no message)'}
+            {formatFullSolveStatusMessage(result.success)}
           </div>
         </div>
       </div>

@@ -43,7 +43,7 @@ export interface ChangeRecord {
  * Request payload for solving a sudoku puzzle
  * 
  * @property grid - 9x9 grid of integers (0 = empty, 1-9 = filled)
- * @property debug_level - Optional debug level for solver (default: 0)
+ * @property debug_level - Optional debug level for solver (default: 0, not exposed in UI)
  */
 export interface SolveRequest {
   grid: Grid;

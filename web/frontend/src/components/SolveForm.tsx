@@ -69,9 +69,39 @@ function formatChangeRecord(change: ChangeRecord): string {
   return parts.join('. ');
 }
 
+function formatStepStatusMessage(
+  stepState: "solving" | "solved" | "stuck",
+  stepChangeRecord: ChangeRecord | null,
+  hasStepsBeenTaken: boolean
+): string {
+  if (!hasStepsBeenTaken) {
+    return "Solving Status: Not started\nClick 'Next Step' to begin.";
+  }
+  
+  if (stepState === "stuck") {
+    return "Solving Status: Stuck\nPuzzle may be unsolvable.";
+  }
+  
+  if (stepState === "solved") {
+    if (stepChangeRecord) {
+      const cellsFilled = stepChangeRecord.cells_filled.length;
+      const candidatesPruned = stepChangeRecord.candidates_pruned.length;
+      return `Solving Status: Solved\nRan ${stepChangeRecord.technique} rule: ${cellsFilled} cells filled, ${candidatesPruned} candidates pruned`;
+    }
+    return "Solving Status: Solved";
+  }
+  
+  // stepState === "solving"
+  if (stepChangeRecord) {
+    const cellsFilled = stepChangeRecord.cells_filled.length;
+    const candidatesPruned = stepChangeRecord.candidates_pruned.length;
+    return `Solving Status: In Progress\nRan ${stepChangeRecord.technique} rule: ${cellsFilled} cells filled, ${candidatesPruned} candidates pruned`;
+  }
+  return "Solving Status: In Progress";
+}
+
 export default function SolveForm() {
   const [grid, setGrid] = useState<Grid>(EMPTY_GRID);
-  const [debugLevel, setDebugLevel] = useState<number>(0); 
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<SolveResponse | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -86,6 +116,7 @@ export default function SolveForm() {
   const [stepDone, setStepDone] = useState<boolean>(false);
   const [stepState, setStepState] = useState<"solving" | "stuck" | "solved">("solving");
   const [stepCandidates, setStepCandidates] = useState<number[][][] | null>(null);
+  const [stepChangeRecord, setStepChangeRecord] = useState<ChangeRecord | null>(null);
   
   // Toggle state for showing original puzzle
   const [showOriginal, setShowOriginal] = useState<boolean>(false);
@@ -131,10 +162,11 @@ export default function SolveForm() {
       setStepDone(false);
       setStepState("solving"); // Initialize state to "solving"
       setStepCandidates(null);
+      setStepChangeRecord(null);
       setShowOriginal(false); // Reset toggle to default
 
       try {
-        const session = await createSession(grid, debugLevel);
+        const session = await createSession(grid);
         setSessionId(session.session_id);
         // Store initial candidates if provided
         if (session.candidates) {
@@ -160,8 +192,8 @@ export default function SolveForm() {
       setOriginalGrid(grid.map(row => [...row])); // Deep copy
       setShowOriginal(false); // Reset toggle to default
       
-      // Call API with structured grid and debug level
-      const response = await solve({ grid, debug_level: debugLevel });
+      // Call API with structured grid
+      const response = await solve({ grid });
       
       // Store result regardless of success/failure
       // The response.success field will determine how we display it
@@ -212,6 +244,12 @@ export default function SolveForm() {
       setStepState(response.state || "solving");
       setStepDone(response.state === "solved");
       setStepCandidates(response.candidates ?? null);
+      // Store the latest change record
+      if (response.changes && response.changes.length > 0) {
+        setStepChangeRecord(response.changes[0]); // Store first (and only) change record
+      } else {
+        setStepChangeRecord(null);
+      }
       // If Show Original is ON, switch it OFF when taking a step
       if (showOriginal) {
         setShowOriginal(false);
@@ -250,6 +288,7 @@ export default function SolveForm() {
     setStepDone(false);
     setStepState("solving"); // Reset state to "solving"
     setStepCandidates(null);
+    setStepChangeRecord(null);
     setShowOriginal(false); // Reset toggle to default
     
     // Focus first cell after state updates
@@ -262,7 +301,7 @@ export default function SolveForm() {
 
   return (
     <div style={containerStyle}>
-      {/* EDIT MODE: Show input form with grid, sample buttons, debug level, and solve button */}
+      {/* EDIT MODE: Show input form with grid, sample buttons, and solve button */}
       {mode === 'edit' && (
         <form onSubmit={handleSubmit}>
           <div style={formGroupStyle}>
@@ -364,62 +403,6 @@ export default function SolveForm() {
 
           <div style={formGroupStyle}>
             <label style={labelStyle}>
-              Debug Level
-            </label>
-            <div style={radioGroupStyle}>
-              <label style={getRadioLabelStyle(loading)}>
-                <input
-                  type="radio"
-                  name="debugLevel"
-                  value="0"
-                  checked={debugLevel === 0}
-                  onChange={(e) => setDebugLevel(parseInt(e.target.value))}
-                  disabled={loading}
-                  style={getRadioInputStyle(loading)}
-                />
-                <span>0 - Silent</span>
-              </label>
-              <label style={getRadioLabelStyle(loading)}>
-                <input
-                  type="radio"
-                  name="debugLevel"
-                  value="1"
-                  checked={debugLevel === 1}
-                  onChange={(e) => setDebugLevel(parseInt(e.target.value))}
-                  disabled={loading}
-                  style={getRadioInputStyle(loading)}
-                />
-                <span>1 - Informational</span>
-              </label>
-              <label style={getRadioLabelStyle(loading)}>
-                <input
-                  type="radio"
-                  name="debugLevel"
-                  value="2"
-                  checked={debugLevel === 2}
-                  onChange={(e) => setDebugLevel(parseInt(e.target.value))}
-                  disabled={loading}
-                  style={getRadioInputStyle(loading)}
-                />
-                <span>2 - Basic</span>
-              </label>
-              <label style={getRadioLabelStyle(loading)}>
-                <input
-                  type="radio"
-                  name="debugLevel"
-                  value="3"
-                  checked={debugLevel === 3}
-                  onChange={(e) => setDebugLevel(parseInt(e.target.value))}
-                  disabled={loading}
-                  style={getRadioInputStyle(loading)}
-                />
-                <span>3 - Detailed</span>
-              </label>
-            </div>
-          </div>
-
-          <div style={formGroupStyle}>
-            <label style={labelStyle}>
               Solve Mode
             </label>
             <div style={radioGroupStyle}>
@@ -504,10 +487,7 @@ export default function SolveForm() {
           <div style={{ marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <label style={labelStyle}>
-                {showOriginal ? 'Original Puzzle' : 
-                  stepState === 'solved' ? 'Solved Puzzle' :
-                  stepState === 'stuck' ? 'Stuck' :
-                  'Solving Puzzle'}
+                {showOriginal ? 'Original Puzzle' : 'Solving Puzzle (Step Solve Mode)'}
               </label>
               <button
                 type="button"
@@ -559,16 +539,7 @@ export default function SolveForm() {
           <div className="message-box" aria-label="Step status" style={{ marginBottom: '16px' }}>
             <div className="message-label">Step Status:</div>
             <div className="message-content">
-              {stepInfo && stepInfo.rule ? (
-                stepInfo.rule
-              ) : (
-                'No steps applied yet. Click "Next Step" to begin.'
-              )}
-              {stepDone && (
-                <div style={{ color: '#28a745', fontWeight: 'bold', marginTop: '8px' }}>
-                  ✓ Puzzle solved!
-                </div>
-              )}
+              {formatStepStatusMessage(stepState, stepChangeRecord, stepInfo !== null)}
               {networkError && (
                 <div style={{ color: '#b00020', marginTop: '8px' }}>
                   {networkError}
@@ -583,28 +554,30 @@ export default function SolveForm() {
           </div>
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-            <button
-              type="button"
-              style={{ ...getButtonStyle(loading), width: '50%' }}
-              disabled={loading || !sessionId || stepDone}
-              onClick={handleNextStep}
-              onMouseOver={(e) => {
-                if (!loading && !stepDone) {
-                  e.currentTarget.style.backgroundColor = '#0056b3';
-                }
-              }}
-              onMouseOut={(e) => {
-                if (!loading && !stepDone) {
-                  e.currentTarget.style.backgroundColor = '#007bff';
-                }
-              }}
-            >
-              {loading ? 'Stepping...' : 'Next Step'}
-            </button>
+            {stepState !== 'stuck' && stepState !== 'solved' && (
+              <button
+                type="button"
+                style={{ ...getButtonStyle(loading), width: '50%' }}
+                disabled={loading || !sessionId || stepDone}
+                onClick={handleNextStep}
+                onMouseOver={(e) => {
+                  if (!loading && !stepDone) {
+                    e.currentTarget.style.backgroundColor = '#0056b3';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!loading && !stepDone) {
+                    e.currentTarget.style.backgroundColor = '#007bff';
+                  }
+                }}
+              >
+                {loading ? 'Stepping...' : 'Next Step'}
+              </button>
+            )}
 
             <button
               type="button"
-              style={{ ...newPuzzleButtonStyle, width: '50%' }}
+              style={{ ...newPuzzleButtonStyle, width: stepState === 'stuck' || stepState === 'solved' ? '100%' : '50%' }}
               onClick={handleEndSession}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = '#218838';
