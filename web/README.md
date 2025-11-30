@@ -121,26 +121,39 @@ For active development, you may want to run services separately:
 - Returns: `{"solution": number[][] | null, "success": boolean, "message": "string"}`
 - Fully integrated with core SudokuSolver engine
 
-### Session-Based Stepwise Solving (Experimental)
+### Session-Based Stepwise Solving
 
 **Create Session:**
 - **POST** `/api/sessions`
 - Body: `{"grid": number[][], "debug_level": number}`
-- Returns: `{"session_id": "string"}`
+- Returns: `{"session_id": "string", "candidates": CandidateGrid | null}`
 - Creates a new solving session and stores initial grid state in Redis
+- Returns initial candidate grid for display
 
 **Apply Step:**
 - **POST** `/api/sessions/{session_id}/step`
-- Returns: `{"grid": number[][], "step": {"rule": string, "row": number, "col": number, "value": number}, "done": boolean}`
-- Applies one solving step and updates grid state in Redis
-- Returns updated grid, step information, and completion status
+- Returns:
+  - `solution: Grid` - Updated grid state
+  - `success: boolean` - True if puzzle is solved
+  - `message: string` - Status message
+  - `state: "solving" | "solved" | "stuck"` - Current solving state
+  - `candidates: CandidateGrid | null` - 9×9 grid of candidate lists for each cell
+  - `changes: ChangeRecord[] | null` - List of change records with technique, cells_filled, and candidates_pruned
+- Applies one solving technique per call using SudokuSolver
+- Updates complete solver state in Redis (grid, technique index, pass progress, change history)
+- Returns updated grid, candidates, state, and detailed change information
 
 **Delete Session:**
 - **DELETE** `/api/sessions/{session_id}`
 - Returns: `{"deleted": boolean}`
-- Removes session from Redis storage
+- Removes session and all associated state from Redis storage
 
-**Note:** Currently uses stub step solver (`step_solver.py`). Ready for integration with real step-wise SudokuSolver logic.
+**Features:**
+- Single-technique-per-step execution cycles through all solving techniques
+- Three-state system: "solving" (in progress), "solved" (complete), "stuck" (no progress)
+- Pass progress tracking detects when no changes occur during a complete technique cycle
+- Change tracking records all cells filled and candidates pruned per technique
+- Complete solver state persistence across step calls
 
 ## Deployment
 
@@ -218,17 +231,21 @@ docker-compose logs -f web
 
 ### Current Features
 - ✅ Full puzzle solving via `/api/solve` endpoint
-- ✅ Stepwise solving via session endpoints (experimental)
-- ✅ Redis-backed session storage
+- ✅ Stepwise solving via session endpoints with single-technique execution
+- ✅ Redis-backed session storage with complete solver state persistence
+- ✅ Candidate grid display showing candidate lists in empty cells (3×3 mini-grid layout)
+- ✅ Show Original toggle to view original puzzle vs. current solved state
+- ✅ Change tracking with detailed records of cells filled and candidates pruned
+- ✅ Three-state solving system (solving/solved/stuck) with pass progress tracking
 - ✅ Grid-based input/output with validation
-- ✅ Debug level support (0-3)
+- ✅ Debug level support (0-3) via API (silent mode default in UI)
 - ✅ Visual grid display with 3×3 box boundaries
 - ✅ Sample puzzle loading
 - ✅ Error handling and validation
+- ✅ Mobile responsive design optimized for iPhone SE and mobile devices
 
 ### Future Enhancements
-1. Replace stub step solver with real step-wise logic
-2. Add session TTL for auto-cleanup
+1. Add session TTL for auto-cleanup
 3. Add authentication and user management
 4. Implement file upload for puzzle images
 5. Add database persistence for puzzle history

@@ -12,7 +12,7 @@ services:
   # FastAPI backend service
   backend:
     # Pull pre-built image from GHCR
-    image: ghcr.io/wmurphy41/sudoku-backend:v2025.11.26
+    image: ghcr.io/wmurphy41/sudoku-backend:v2025.11.28
     
     # Container name for easy reference
     container_name: sudoku-backend
@@ -46,7 +46,7 @@ services:
   # Nginx + React frontend service
   web:
     # Pull pre-built image from GHCR
-    image: ghcr.io/wmurphy41/sudoku-web:v2025.11.26
+    image: ghcr.io/wmurphy41/sudoku-web:v2025.11.28
     
     # Container name for easy reference
     container_name: sudoku-web

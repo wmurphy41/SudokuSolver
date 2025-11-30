@@ -37,19 +37,23 @@ export GHCR_TOKEN="ghp_your_token_here"
 
 **On Windows:**
 ```powershell
-.\scripts\build-push.ps1 v0.1.0
+.\scripts\build-push.ps1 v2025.11.28
 ```
 
 **On Linux/Mac:**
 ```bash
 chmod +x scripts/build-push.sh
-./scripts/build-push.sh v0.1.0
+./scripts/build-push.sh v2025.11.28
 ```
+
+**Note:** Replace `v2025.11.28` with your desired version tag (e.g., `v2025.11.28`, `v0.1.0`, etc.).
 
 This will:
 - Build `linux/amd64` images (compatible with Lightsail x86_64 instances)
-- Tag images with both version tag (`v0.1.0`) and `latest`
+- Tag images with the specified version tag (e.g., `v2025.11.28` or `v0.1.0`)
 - Push to GHCR: `ghcr.io/wmurphy41/sudoku-backend` and `ghcr.io/wmurphy41/sudoku-web`
+
+**Note:** Version tags follow the format `vYYYY.MM.DD` (e.g., `v2025.11.28`) or semantic versioning (e.g., `v0.1.0`). Use the format that best fits your release strategy.
 
 ### Step 3: Verify Images
 
@@ -61,9 +65,11 @@ You should see:
 
 ## Deploying to Lightsail
 
-### Step 1: Update docker-compose.yml
+### Step 1: Update docker-compose.prod.yml
 
-On your Lightsail server, edit `/home/ubuntu/SudokuSolver/web/docker-compose.yml`:
+On your Lightsail server, edit `/home/ubuntu/SudokuSolver/web/docker-compose.prod.yml`:
+
+**Note:** Production deployments use `docker-compose.prod.yml` which references pre-built images from GHCR. The version tags should match the images you've built and pushed.
 
 ```yaml
 # Docker Compose configuration for SudokuSolver web application
