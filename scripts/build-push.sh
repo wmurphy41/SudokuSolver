@@ -114,7 +114,10 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Building and pushing web image...${NC}"
 echo -e "${GREEN}========================================${NC}"
 # Platform: linux/amd64 for AWS Lightsail x86_64 instances
+# Build args for subpath deployment: /sudokusolver/
 docker buildx build --platform linux/amd64 \
+    --build-arg VITE_BASE_PATH=/sudokusolver/ \
+    --build-arg VITE_API_BASE=/sudokusolver/api \
     -t "${WEB_IMAGE}:${VERSION}" \
     -t "${WEB_IMAGE}:latest" \
     -f web/frontend/Dockerfile.prod \

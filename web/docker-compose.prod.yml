@@ -12,15 +12,15 @@ services:
   # FastAPI backend service
   backend:
     # Pull pre-built image from GHCR
-    image: ghcr.io/wmurphy41/sudoku-backend:v2025.11.28
+    image: ghcr.io/wmurphy41/sudoku-backend:v2025.11.26
     
     # Container name for easy reference
     container_name: sudoku-backend
     
-    # Expose port 8000 internally (not accessible from host)
-    # The nginx service will proxy requests to this port
-    expose:
-      - "8000"
+    # Bind to localhost:8001 on host (accessible only from server nginx)
+    # Server nginx proxies /sudokusolver/api/* to this port
+    ports:
+      - "127.0.0.1:8001:8000"
     
     # Depends on Redis service
     depends_on:
@@ -36,6 +36,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
     
     # Health check to ensure service is running
+    # Note: Healthcheck uses container-internal port 8000, not host port 8001
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/healthz"]
       interval: 30s
@@ -46,15 +47,15 @@ services:
   # Nginx + React frontend service
   web:
     # Pull pre-built image from GHCR
-    image: ghcr.io/wmurphy41/sudoku-web:v2025.11.28
+    image: ghcr.io/wmurphy41/sudoku-web:v2025.11.26
     
     # Container name for easy reference
     container_name: sudoku-web
     
-    # Map host port 80 to container port 80
-    # This makes the application accessible at http://YOUR_SERVER_IP
+    # Bind to localhost:8082 on host (accessible only from server nginx)
+    # Server nginx proxies /sudokusolver/ to this port
     ports:
-      - "80:80"
+      - "127.0.0.1:8082:80"
     
     # This service depends on the backend service
     # Docker will start backend first, then web
@@ -68,6 +69,7 @@ services:
     restart: unless-stopped
     
     # Health check to ensure nginx is serving content
+    # Note: Healthcheck uses container-internal URL, not host port
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s

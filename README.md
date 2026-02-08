@@ -27,7 +27,7 @@ A comprehensive Python Sudoku solver with advanced solving techniques and OCR ca
 - **Debug Levels**: Four debug levels (Silent, Informational, Basic, Detailed) with captured solver logs
 - **Sample Puzzles**: Quick-load buttons for Empty, Easy, Medium, and Hard example puzzles
 - **Smart Error Handling**: Distinguishes between invalid input, network errors, and solver failures
-- **Stepwise Solving**: Redis-backed session-based step-by-step solving with single-technique execution, change tracking, and candidate display
+- **Stepwise Solving (Experimental)**: Redis-backed session-based step-by-step solving with real-time grid updates
 - **Docker Deployment**: Containerized architecture with Nginx reverse proxy and Redis support
 
 ### OCR Capabilities (Optional)
@@ -214,31 +214,21 @@ if solved:
 
 ```python
 from src.sudoku_solver import SudokuSolver
-from typing import Literal
 
 # Create solver for step-by-step solving
 solver = SudokuSolver(puzzle, debug_level=2)
 
-# Solve step by step - one technique per call
-state: Literal["solving", "solved", "stuck"]
-change_record: dict
-
-while True:
-    state, change_record = solver.step_solve()
+# Solve step by step
+while solver.count_empty_cells() > 0:
+    step_solved = solver.step_solve()
+    print(f"Step completed. Solved: {step_solved}")
     
-    technique = change_record.get("technique", "unknown")
-    cells_filled = len(change_record.get("cells_filled", []))
-    candidates_pruned = len(change_record.get("candidates_pruned", []))
-    
-    print(f"Applied {technique}: {cells_filled} cells filled, {candidates_pruned} candidates pruned")
-    
-    if state == "solved":
+    if step_solved:
         print("Puzzle solved!")
         break
-    elif state == "stuck":
-        print("Stuck - no progress made in full pass")
+    elif solver.metrics.solve_loops > 50:  # Prevent infinite loops
+        print("Too many steps, stopping")
         break
-    # Continue if state == "solving"
 
 # Or force display even in silent mode
 solver.print_grid()  # Always shows grid
@@ -323,14 +313,8 @@ SudokuSolver(puzzle: List[List[int]], debug_level: int = 0)
 
 #### Methods
 
-- `solve() -> bool`: Solve the puzzle completely and return success status
-- `step_solve() -> Tuple[Literal["solving", "solved", "stuck"], Dict[str, Any]]`: Perform one solving technique and return state and change record
-  - Returns: Tuple of (state, change_record) where:
-    - `state` is "solved" if puzzle is solved, "stuck" if no progress in full pass, or "solving" otherwise
-    - `change_record` contains technique name, cells_filled list, and candidates_pruned list
-- `get_candidate_grid() -> List[List[List[int]]]`: Return 9×9 grid of candidate lists for each cell
-- `get_change_history() -> List[Dict[str, Any]]`: Get complete list of all change records made during solving
-- `get_last_change() -> Optional[Dict[str, Any]]`: Get the most recent change record
+- `solve() -> bool`: Solve the puzzle and return success status
+- `step_solve() -> bool`: Perform one solving step and return success status
 - `print_grid(force_print: bool = True)`: Display the current state of the grid
 - `print_candidates(force_print: bool = True)`: Show candidates for all cells (debugging aid)
 - `count_empty_cells() -> int`: Count remaining empty cells
@@ -434,19 +418,12 @@ See [web/README-deploy-images.md](web/README-deploy-images.md) for complete depl
 - Captures solver output based on debug level
 - Returns partial progress even on failure
 
-**Session-Based Stepwise Solving:**
-- `POST /api/sessions` - Creates a new solving session, accepts `{"grid": number[][], "debug_level": number}`, returns `{"session_id": "string", "candidates": CandidateGrid | null}`
-- `POST /api/sessions/{session_id}/step` - Applies one solving technique, returns:
-  - `solution: Grid | null` - Updated grid state
-  - `success: boolean` - True if puzzle is solved
-  - `message: string` - Status message
-  - `state: "solving" | "solved" | "stuck"` - Current solving state
-  - `candidates: CandidateGrid | null` - 9×9 grid of candidate lists for each cell
-  - `changes: ChangeRecord[] | null` - List of change records (technique, cells_filled, candidates_pruned)
+**Session-Based Stepwise Solving (Experimental):**
+- `POST /api/sessions` - Creates a new solving session, accepts `{"grid": number[][], "debug_level": number}`, returns `{"session_id": "string"}`
+- `POST /api/sessions/{session_id}/step` - Applies one solving step, returns `{"grid": number[][], "step": {"rule": string, "row": number, "col": number, "value": number}, "done": boolean}`
 - `DELETE /api/sessions/{session_id}` - Deletes a solving session, returns `{"deleted": boolean}`
-- **Fully integrated** with SudokuSolver engine using single-technique-per-step execution
-- **Redis-backed** session storage for persistent solver state between steps
-- **Change tracking** records all modifications made by each solving technique
+- **Redis-backed** session storage for persistent state between steps
+- Currently uses stub step solver; ready for integration with real step-wise logic
 
 ### Features
 
@@ -460,13 +437,8 @@ See [web/README-deploy-images.md](web/README-deploy-images.md) for complete depl
 - ✅ **Accessibility**: ARIA labels and live regions for screen readers
 - ✅ **Containerized**: Docker-based deployment with Nginx reverse proxy
 - ✅ **Fully Integrated**: Backend now uses actual SudokuSolver engine with log capture
-- ✅ **Stepwise Solving**: Fully integrated step-by-step solving with one technique per step
-- ✅ **Candidate Display**: Visual 3×3 mini-grid showing candidate lists in empty cells
-- ✅ **Show Original Toggle**: Toggle between original puzzle and current solved state
-- ✅ **Change Tracking**: Detailed records of cells filled and candidates pruned per technique
-- ✅ **Three-State Solving**: Clear solving states (solving/solved/stuck) with pass progress tracking
+- ✅ **Stepwise Solving (Experimental)**: Redis-backed sessions for step-by-step puzzle solving
 - ✅ **Session Management**: Create, step through, and delete solving sessions via REST API
-- ✅ **Mobile Responsive**: Optimized UI for iPhone SE and mobile devices
 
 ### Documentation
 
@@ -626,24 +598,26 @@ This project is [MIT](https://spdx.org/licenses/MIT.html) licensed.
 
 ## Changelog
 
-For detailed version history and release notes, see [CHANGELOG.md](CHANGELOG.md).
-
-### Latest Release (v2025.11.28)
-
-**Major Features:**
-- **Enhanced Step Solve Mode**: Single-technique-per-step execution with three-state system (solving/solved/stuck)
-- **Change Tracking**: Comprehensive records of all modifications (cells filled, candidates pruned) per technique
-- **Candidate Display**: Visual 3×3 mini-grid showing candidate lists in empty cells for enhanced solving visibility
-- **Show Original Toggle**: Toggle between original puzzle and current solved state in both Full and Step modes
-- **Mobile Responsive**: Optimized UI scaling for iPhone SE and mobile devices
-
-**Improvements:**
-- Improved message formatting with status-first structure
-- Consistent message box styling across both solve modes
-- Removed debug mode selection UI (still supported via API)
-- Enhanced stuck state detection through pass progress tracking
-
-See [CHANGELOG.md](CHANGELOG.md) for complete change history.
+### Recent Improvements (Latest)
+- **Redis-Backed Stepwise Solving (Experimental)**: New session-based step-by-step solving feature for web application
+  - Session endpoints: `POST /api/sessions`, `POST /api/sessions/{id}/step`, `DELETE /api/sessions/{id}`
+  - Redis-backed session storage for persistent state between steps
+  - Frontend UI with "Start Step Session", "Next Step", and "End Session" buttons
+  - Step information display showing rule, cell, and value for each move
+  - Currently uses stub step solver ready for integration with real step-wise logic
+- **Command-Line Interface**: New CLI solver (`src/cli_solver.py`) for solving puzzles from JSON files with support for debug levels, output saving, and step-by-step solving
+- **Command-Line Documentation**: Comprehensive usage guide in `docs/COMMAND_LINE_USAGE.md`
+- **Web UI Enhancement**: Mode-based UI in SolveForm with Edit and Result modes for better user experience
+- **Focus Management**: Auto-focus on first cell when returning to edit mode
+- **Project Organization**: Reorganized test and example data files into dedicated subdirectories
+  - Tests now use `tests/test_data/` for all test data files (images, JSON, expected outputs)
+  - Examples now use `examples/examples_data/` for all data files (images, JSON puzzles)
+  - Improved project structure with clear separation of code and data files
+- **Enhanced Debug System**: Added 4-level debug system (silent, informational, basic, detailed)
+- **Step-by-Step Solving**: New `step_solve()` method for interactive puzzle solving
+- **Flexible Print Functions**: `print_grid()` and `print_candidates()` with `force_print` parameter
+- **Silent Mode**: Complete output suppression for batch processing
+- **Improved API**: Better control over solver output and behavior
 
 ### Previous Improvements
 - Complete rewrite with modern Python practices

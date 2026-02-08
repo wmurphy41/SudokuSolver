@@ -5,6 +5,15 @@
 # Stage 1: Build the React application with Node.js
 FROM node:20-alpine AS build
 
+# Build arguments for Vite base path and API base URL
+# These are set at build time to configure the production build
+ARG VITE_BASE_PATH=/sudokusolver/
+ARG VITE_API_BASE=/sudokusolver/api
+
+# Set as environment variables for npm run build
+ENV VITE_BASE_PATH=${VITE_BASE_PATH}
+ENV VITE_API_BASE=${VITE_API_BASE}
+
 # Set working directory for build stage
 WORKDIR /app
 
@@ -22,6 +31,7 @@ COPY frontend/ .
 
 # Build the React application for production
 # This creates optimized, minified files in the 'dist' directory
+# Vite will use VITE_BASE_PATH and VITE_API_BASE from environment
 RUN npm run build
 
 # Stage 2: Production stage using Nginx Alpine image

@@ -110,7 +110,10 @@ Write-Host "Building and pushing web image..." -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 
 # Platform: linux/amd64 for AWS Lightsail x86_64 instances
+# Build args for subpath deployment: /sudokusolver/
 docker buildx build --platform linux/amd64 `
+    --build-arg VITE_BASE_PATH=/sudokusolver/ `
+    --build-arg VITE_API_BASE=/sudokusolver/api `
     -t "${WEB_IMAGE}:${Version}" `
     -t "${WEB_IMAGE}:latest" `
     -f web/frontend/Dockerfile.prod `

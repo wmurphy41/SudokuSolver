@@ -37,23 +37,19 @@ export GHCR_TOKEN="ghp_your_token_here"
 
 **On Windows:**
 ```powershell
-.\scripts\build-push.ps1 v2025.11.28
+.\scripts\build-push.ps1 v0.1.0
 ```
 
 **On Linux/Mac:**
 ```bash
 chmod +x scripts/build-push.sh
-./scripts/build-push.sh v2025.11.28
+./scripts/build-push.sh v0.1.0
 ```
-
-**Note:** Replace `v2025.11.28` with your desired version tag (e.g., `v2025.11.28`, `v0.1.0`, etc.).
 
 This will:
 - Build `linux/amd64` images (compatible with Lightsail x86_64 instances)
-- Tag images with the specified version tag (e.g., `v2025.11.28` or `v0.1.0`)
+- Tag images with both version tag (`v0.1.0`) and `latest`
 - Push to GHCR: `ghcr.io/wmurphy41/sudoku-backend` and `ghcr.io/wmurphy41/sudoku-web`
-
-**Note:** Version tags follow the format `vYYYY.MM.DD` (e.g., `v2025.11.28`) or semantic versioning (e.g., `v0.1.0`). Use the format that best fits your release strategy.
 
 ### Step 3: Verify Images
 
@@ -65,11 +61,54 @@ You should see:
 
 ## Deploying to Lightsail
 
-### Step 1: Update docker-compose.prod.yml
+### Subpath Deployment (e.g., /sudokusolver)
 
-On your Lightsail server, edit `/home/ubuntu/SudokuSolver/web/docker-compose.prod.yml`:
+If deploying SudokuSolver under a subpath (e.g., `http://yourdomain.com/sudokusolver`) alongside other applications:
 
-**Note:** Production deployments use `docker-compose.prod.yml` which references pre-built images from GHCR. The version tags should match the images you've built and pushed.
+1. **Use `docker-compose.prod.yml`** instead of `docker-compose.yml`
+   - Containers bind to localhost only (ports 8082 for frontend, 8001 for backend)
+   - Server nginx handles subpath routing
+
+2. **Configure server nginx** (`/etc/nginx/nginx.conf`) with location blocks:
+   ```nginx
+   # SudokuSolver frontend
+   location /sudokusolver/ {
+       proxy_pass http://localhost:8082/;
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       proxy_set_header X-Forwarded-Proto $scheme;
+   }
+
+   # SudokuSolver API
+   location /sudokusolver/api/ {
+       rewrite ^/sudokusolver/api/(.*) /api/$1 break;
+       proxy_pass http://localhost:8001;
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       proxy_set_header X-Forwarded-Proto $scheme;
+       proxy_connect_timeout 30s;
+       proxy_send_timeout 30s;
+       proxy_read_timeout 30s;
+   }
+   ```
+
+3. **Build images with subpath build args** (already included in build scripts):
+   - `VITE_BASE_PATH=/sudokusolver/`
+   - `VITE_API_BASE=/sudokusolver/api`
+
+4. **Deploy using production compose file**:
+   ```bash
+   docker compose -f docker-compose.prod.yml pull
+   docker compose -f docker-compose.prod.yml up -d
+   ```
+
+### Root Deployment (Standalone)
+
+### Step 1: Update docker-compose.yml
+
+On your Lightsail server, edit `/home/ubuntu/SudokuSolver/web/docker-compose.yml`:
 
 ```yaml
 # Docker Compose configuration for SudokuSolver web application
@@ -125,6 +164,22 @@ Docker will cache your credentials, so you only need to do this once.
 
 ### Step 3: Deploy
 
+**For subpath deployment:**
+```bash
+cd /home/ubuntu/SudokuSolver/web
+
+# Pull the latest images
+docker compose -f docker-compose.prod.yml pull
+
+# Stop old containers and start new ones
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml up -d
+
+# Verify services are running
+docker compose -f docker-compose.prod.yml ps
+```
+
+**For root deployment:**
 ```bash
 cd /home/ubuntu/SudokuSolver/web
 
@@ -141,6 +196,20 @@ docker compose ps
 
 ### Step 4: Verify Deployment
 
+**For subpath deployment:**
+```bash
+# Test backend (via server nginx)
+curl http://yourdomain.com/sudokusolver/api/healthz
+
+# Test frontend (via server nginx)
+curl http://yourdomain.com/sudokusolver/
+
+# Check logs if needed
+docker compose -f docker-compose.prod.yml logs backend
+docker compose -f docker-compose.prod.yml logs web
+```
+
+**For root deployment:**
 ```bash
 # Test backend
 curl http://localhost/api/healthz

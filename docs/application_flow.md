@@ -149,29 +149,23 @@ Frontend: POST /api/sessions/{session_id}/step
     ↓
 Backend: POST /api/sessions/{session_id}/step
     ↓
-FastAPI retrieves grid and solver_state from Redis
+FastAPI retrieves grid from Redis
     ↓
-Calls apply_one_step(grid, debug_level, solver_state)
-    - Restores SudokuSolver from solver_state or creates new one
-    - Calls solver.step_solve() to apply one technique
-    - Extracts updated grid, candidates, state, and change_record
+Calls apply_one_step(grid) (stub for now)
     ↓
-Updates grid, state, solver_state, and change_record in Redis
+Updates grid in Redis with new state
     ↓
 Returns: {
-  "solution": number[][],
-  "success": boolean,
-  "message": string,
-  "state": "solving" | "solved" | "stuck",
-  "candidates": CandidateGrid | null,
-  "changes": ChangeRecord[] | null
+  "grid": number[][],
+  "step": {"rule": string, "row": number, "col": number, "value": number},
+  "done": boolean
 }
     ↓
-Frontend updates grid state with response.solution
+Frontend updates grid state with response.grid
     ↓
-UI displays updated grid with candidates, step information, and change details
+UI displays updated grid and step information
     ↓
-If state="solved" or state="stuck", "Next Step" button is disabled
+If done=true, "Next Step" button is disabled
 ```
 
 **End Session:**
@@ -392,31 +386,12 @@ async def step_session(session_id: str) -> StepResponse:
     
     data = json.loads(raw)
     grid = data["grid"]
-    debug_level = data.get("debug_level", 0)
-    solver_state = data.get("solver_state")  # May be None for old sessions
+    new_grid, step_info_dict, done = apply_one_step(grid)
     
-    # Apply one step using SudokuSolver
-    new_grid, state, message, updated_solver_state, candidate_grid, change_record = \
-        apply_one_step(grid, debug_level, solver_state)
-    
-    # Persist updated state in Redis
     data["grid"] = new_grid
-    data["state"] = state
-    data["solver_state"] = updated_solver_state
     r.set(f"sudoku:session:{session_id}", json.dumps(data))
     
-    # Format response with change tracking
-    changes_list = [change_record] if change_record else None
-    success = state == "solved"
-    
-    return StepResponse(
-        solution=new_grid,
-        success=success,
-        message=message,
-        state=state,
-        candidates=candidate_grid,
-        changes=changes_list
-    )
+    return StepResponse(grid=new_grid, step=StepInfo(**step_info_dict), done=done)
 ```
 
 **Delete Session:**
@@ -431,12 +406,10 @@ async def delete_session(session_id: str) -> Dict[str, bool]:
 **What happens:**
 1. FastAPI receives HTTP request
 2. Pydantic validates request body/models
-3. Redis client retrieves session data (grid, solver_state, debug_level)
-4. SudokuSolver restored from solver_state or created from grid
-5. One solving technique applied via `solver.step_solve()`
-6. Updated grid, candidates, state, and change_record extracted
-7. Complete solver state persisted back to Redis for next step
-8. FastAPI returns JSON response with solution, state, candidates, and changes
+3. Redis client retrieves/updates session data
+4. Step solver applies one solving step (stub currently)
+5. Updated grid state persisted in Redis
+6. FastAPI returns JSON response with updated state
 
 ---
 
@@ -546,7 +519,7 @@ export interface Healthz {
 | Health Endpoint | `@app.get("/api/healthz")` | Health check endpoint |
 | Solve Endpoint | `@app.post("/api/solve")` | Full puzzle solving endpoint |
 | Session Endpoints | `@app.post("/api/sessions")`, `@app.post("/api/sessions/{id}/step")`, `@app.delete("/api/sessions/{id}")` | Stepwise solving endpoints |
-| Step Solver | `web/backend/step_solver.py` | Step-wise solving logic using SudokuSolver |
+| Step Solver | `web/backend/step_solver.py` | Step-wise solving logic (stub) |
 | Redis Client | `get_redis()` in `app.py` | Session state storage |
 | Pydantic Models | `SolveRequest`, `SolveResponse`, `StepSessionCreate`, `StepInfo`, `StepResponse` | Data validation models |
 
@@ -569,19 +542,19 @@ export interface Healthz {
 4. **Abstraction**: API service layer isolates components from HTTP details
 5. **Validation**: Both frontend (TypeScript) and backend (Pydantic) validate data
 6. **Proxy/Routing**: Vite (dev) or Nginx (prod) handles API routing
-7. **Session State**: Redis-backed sessions for stepwise solving with full solver state persistence
+7. **Session State**: Redis-backed sessions for stepwise solving (experimental feature)
 
 ---
 
 ## 🚀 Future Integration Points
 
-1. **Add OCR Endpoint**: For image-based puzzle input
-2. **Session Persistence**: Consider TTL for sessions to auto-cleanup
-3. **Error Handling**: More detailed error responses for session endpoints
-4. **Session History**: Track step-by-step history in Redis for undo/redo functionality
-5. **Advanced Change Visualization**: Highlight specific cells/candidates that changed in each step
+1. **Step Solver Integration**: Replace stub in `step_solver.py` with real one-step wrapper around `SudokuSolver`
+2. **Add OCR Endpoint**: For image-based puzzle input
+3. **Session Persistence**: Consider TTL for sessions to auto-cleanup
+4. **Error Handling**: More detailed error responses for session endpoints
+5. **Session History**: Track step-by-step history in Redis for undo/redo functionality
 
-The current architecture supports both full solve and stepwise solving workflows with full SudokuSolver integration!
+The current architecture supports both full solve and stepwise solving workflows!
 
 ---
 
@@ -593,5 +566,5 @@ The current architecture supports both full solve and stepwise solving workflows
 
 ---
 
-**Last Updated:** 2025-11-28 (Enhanced step solve with single-technique execution, change tracking, and candidate display)
+**Last Updated:** 2025-01-XX (Added Redis-backed stepwise solving support)
 
