@@ -185,6 +185,137 @@ environment:
   # Add other production-specific variables
 ```
 
+## Deployment Configuration
+
+### Subpath Deployment (Recommended for Multi-App Servers)
+
+When deploying SudokuSolver alongside other applications on the same server (e.g., under `/sudokusolver`), follow these steps:
+
+#### 1. Customize Configuration Files
+
+**docker-compose.prod.yml:**
+- Update image tags (lines 15, 50) with your GHCR username and version
+- Adjust port bindings if ports 8001/8082 conflict with other services
+- See `web/docker-compose.prod.yml` for detailed customization comments
+
+**Environment Variables:**
+- Copy `web/.env.example` to `web/.env`
+- Set `VITE_BASE_PATH=/sudokusolver/` (or your desired subpath)
+- Set `VITE_API_BASE=/sudokusolver/api` (or your desired API path)
+- Set `GHCR_TOKEN` for building/pushing images
+- See `web/.env.example` for all available options
+
+**Nginx Configuration:**
+- Use `examples/nginx_subpath_deployment.conf` as a template
+- Update `server_name` to match your domain
+- Update `proxy_pass` ports to match your container ports
+- Update location paths if using a different subpath
+- See the example file for detailed customization comments
+
+#### 2. Build Images with Subpath Configuration
+
+Build images with the correct base path:
+
+```bash
+# Windows
+.\scripts\build-push.ps1 v2026.02.07
+
+# Linux/Mac
+./scripts/build-push.sh v2026.02.07
+```
+
+The build scripts automatically pass `VITE_BASE_PATH=/sudokusolver/` and `VITE_API_BASE=/sudokusolver/api` to the frontend build.
+
+#### 3. Deploy on Server
+
+1. **Copy configuration files:**
+   ```bash
+   # On your server
+   git clone <your-repo>
+   cd SudokuSolver/web
+   ```
+
+2. **Set environment variables:**
+   ```bash
+   # Copy example and customize
+   cp .env.example .env
+   nano .env  # Update with your values
+   ```
+
+3. **Update docker-compose.prod.yml:**
+   - Update image tags to match your GHCR repository
+   - Verify port bindings match your nginx configuration
+
+4. **Start containers:**
+   ```bash
+   docker compose -f docker-compose.prod.yml pull
+   docker compose -f docker-compose.prod.yml up -d
+   ```
+
+5. **Configure server nginx:**
+   ```bash
+   # Copy example config
+   sudo cp ../examples/nginx_subpath_deployment.conf /etc/nginx/sites-available/sudokusolver
+   
+   # Customize the config (update ports, domain, subpath)
+   sudo nano /etc/nginx/sites-available/sudokusolver
+   
+   # Enable and test
+   sudo ln -s /etc/nginx/sites-available/sudokusolver /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+
+#### 4. Verify Deployment
+
+```bash
+# Test frontend
+curl -I http://yourdomain.com/sudokusolver/
+# Expected: HTTP/1.1 200 OK
+
+# Test API
+curl http://yourdomain.com/sudokusolver/api/healthz
+# Expected: {"status":"ok"}
+
+# Check containers
+docker ps
+# Should show: sudoku-backend (healthy), sudoku-web (healthy)
+```
+
+### Root Deployment (Standalone)
+
+For standalone deployment at the root path (`/`):
+
+1. **Build images with root path:**
+   - Set `VITE_BASE_PATH=/` in build
+   - Set `VITE_API_BASE=/api` in build
+
+2. **Use docker-compose.yml** (not prod version):
+   ```bash
+   docker compose up -d
+   ```
+
+3. **Configure nginx** to proxy `/` to `localhost:80` (or your chosen port)
+
+### Configuration Files Reference
+
+- **`web/docker-compose.prod.yml`**: Production compose file with customization comments
+- **`web/.env.example`**: Environment variables template
+- **`examples/nginx_subpath_deployment.conf`**: Nginx configuration example with comments
+- **`web/README-deploy-images.md`**: Detailed image building and deployment guide
+
+### Customization Checklist
+
+Before deploying, ensure you've customized:
+
+- [ ] Image tags in `docker-compose.prod.yml` (your GHCR username/version)
+- [ ] Port bindings if conflicts exist (update both compose and nginx)
+- [ ] `VITE_BASE_PATH` and `VITE_API_BASE` in `.env` (match your subpath)
+- [ ] `server_name` in nginx config (your domain)
+- [ ] `proxy_pass` ports in nginx (match docker-compose ports)
+- [ ] Location paths in nginx (match your subpath)
+- [ ] `GHCR_TOKEN` for building images (your GitHub token)
+
 ## Troubleshooting
 
 ### Common Issues

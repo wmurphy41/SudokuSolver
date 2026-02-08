@@ -1,6 +1,15 @@
 # Docker Compose configuration for SudokuSolver web application (Production)
 # This file uses pre-built images from GitHub Container Registry (GHCR)
 # Use this for deploying to AWS Lightsail or other production environments
+#
+# CUSTOMIZATION REQUIRED:
+# 1. Update image tags (lines 15, 50) to match your GHCR repository and version
+# 2. Adjust port bindings (lines 23, 58) if ports 8001/8082 are in use
+# 3. Update REDIS_URL (line 36) if using external Redis or different config
+# 4. For subpath deployment, ensure frontend images were built with correct
+#    VITE_BASE_PATH and VITE_API_BASE (see web/frontend/Dockerfile.prod)
+#
+# See web/README-deploy-images.md for detailed deployment instructions
 
 services:
   # Redis service for session storage
@@ -12,13 +21,16 @@ services:
   # FastAPI backend service
   backend:
     # Pull pre-built image from GHCR
-    image: ghcr.io/wmurphy41/sudoku-backend:v2025.11.26
+    # CUSTOMIZE: Update with your GHCR username and version tag
+    # Format: ghcr.io/YOUR_USERNAME/sudoku-backend:VERSION
+    image: ghcr.io/wmurphy41/sudoku-backend:v2026.02.07
     
     # Container name for easy reference
     container_name: sudoku-backend
     
     # Bind to localhost:8001 on host (accessible only from server nginx)
     # Server nginx proxies /sudokusolver/api/* to this port
+    # CUSTOMIZE: Change port 8001 if it conflicts with other services
     ports:
       - "127.0.0.1:8001:8000"
     
@@ -30,6 +42,8 @@ services:
     restart: unless-stopped
     
     # Environment variables
+    # CUSTOMIZE: REDIS_URL can be overridden via .env file or environment
+    # For external Redis: redis://host:port/db
     environment:
       - PYTHONPATH=/app/src
       - PYTHONUNBUFFERED=1
@@ -47,13 +61,18 @@ services:
   # Nginx + React frontend service
   web:
     # Pull pre-built image from GHCR
-    image: ghcr.io/wmurphy41/sudoku-web:v2025.11.26
+    # CUSTOMIZE: Update with your GHCR username and version tag
+    # Format: ghcr.io/YOUR_USERNAME/sudoku-web:VERSION
+    # IMPORTANT: Image must be built with correct VITE_BASE_PATH and VITE_API_BASE
+    image: ghcr.io/wmurphy41/sudoku-web:v2026.02.07
     
     # Container name for easy reference
     container_name: sudoku-web
     
     # Bind to localhost:8082 on host (accessible only from server nginx)
     # Server nginx proxies /sudokusolver/ to this port
+    # CUSTOMIZE: Change port 8082 if it conflicts with other services
+    # CUSTOMIZE: Update server nginx config to match this port
     ports:
       - "127.0.0.1:8082:80"
     
@@ -71,7 +90,7 @@ services:
     # Health check to ensure nginx is serving content
     # Note: Healthcheck uses container-internal URL, not host port
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1/"]
       interval: 30s
       timeout: 10s
       retries: 3
